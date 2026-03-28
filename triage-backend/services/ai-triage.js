@@ -103,7 +103,21 @@ function computeTriageScore(symptomsText, vitals, age, historyText = "") {
         recommendedDoctor = recommendedDoctor === "General Physician" ? "Urgent Care Physician" : recommendedDoctor + " (Priority)";
     }
 
-    return { score, level, recommendedDoctor };
+    // 5. Suggest Department based on symptoms
+    let recommendedDepartment = "General Practice";
+    if (text.includes('chest pain') || text.includes('heart attack') || text.includes('heart')) {
+        recommendedDepartment = "Cardiology";
+    } else if (text.includes('stroke') || text.includes('seizure') || text.includes('unconscious') || text.includes('dizzy') || text.includes('headache')) {
+        recommendedDepartment = "Neurology";
+    } else if (text.includes('fracture') || text.includes('bone') || text.includes('joint')) {
+        recommendedDepartment = "Orthopedics";
+    } else if (text.includes('bleeding') || text.includes('hemorrhage') || text.includes('severe pain') || text.includes('head injury')) {
+        recommendedDepartment = "Emergency / Trauma";
+    } else if (text.includes('shortness of breath') || text.includes('breathing') || text.includes('asthma') || text.includes('cough')) {
+        recommendedDepartment = "Pulmonology";
+    }
+
+    return { score, level, recommendedDoctor, recommendedDepartment };
 }
 
 module.exports = { computeTriageScore };

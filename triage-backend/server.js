@@ -13,10 +13,13 @@ let patients = [
         id: "1",
         name: "Jane Doe",
         age: 45,
+        phone: "555-0101",
+        address: "123 Maple St, Springfield",
         symptoms: "Chest pain, shortness of breath, radiating pain in left arm.",
         history: "Hypertension, heavy smoker",
         vitals: { heartRate: "120", bloodPressure: "160/100", oxygenLevel: "92" },
         triageLevel: "Critical",
+        department: "Cardiology",
         score: 95,
         recommendedDoctor: "Emergency Physician (Cardiologist Consult)",
         status: "waiting",
@@ -26,10 +29,13 @@ let patients = [
         id: "2",
         name: "John Smith",
         age: 28,
+        phone: "555-0102",
+        address: "456 Oak Ave, Springfield",
         symptoms: "Mild headache, slight fever.",
         history: "None",
         vitals: { heartRate: "75", bloodPressure: "120/80", oxygenLevel: "98" },
         triageLevel: "Non-urgent",
+        department: "Neurology",
         score: 15,
         recommendedDoctor: "Infectious Disease Specialist",
         status: "waiting",
@@ -44,7 +50,7 @@ app.get('/api/patients', (req, res) => {
 });
 
 app.post('/api/patients', (req, res) => {
-    const { name, age, symptoms, history, vitals } = req.body;
+    const { name, age, phone, address, symptoms, history, vitals } = req.body;
     
     // Call the AI Service to determine triage priority
     const triageResult = computeTriageScore(symptoms || "", vitals, age, history || "");
@@ -53,10 +59,13 @@ app.post('/api/patients', (req, res) => {
         id: uuidv4(),
         name,
         age,
+        phone: phone || "",
+        address: address || "",
         symptoms,
         history: history || "",
         vitals: vitals || {},
         triageLevel: triageResult.level,
+        department: triageResult.recommendedDepartment,
         score: triageResult.score,
         recommendedDoctor: triageResult.recommendedDoctor,
         status: "waiting",
@@ -87,7 +96,7 @@ app.get('/api/reports/history', (req, res) => {
         }
         
         let csvRows = [];
-        const headers = ['ID', 'Name', 'Age', 'Symptoms', 'History', 'Heart Rate', 'Blood Pressure', 'Oxygen Level', 'Triage Level', 'Score', 'Suggested Doctor', 'Status', 'Timestamp'];
+        const headers = ['ID', 'Name', 'Age', 'Phone', 'Address', 'Symptoms', 'History', 'Heart Rate', 'Blood Pressure', 'Oxygen Level', 'Triage Level', 'Department', 'Score', 'Suggested Doctor', 'Status', 'Timestamp'];
         csvRows.push(headers.join(','));
         
         patients.forEach(p => {
@@ -105,12 +114,15 @@ app.get('/api/reports/history', (req, res) => {
                 p.id,
                 escapeCSV(p.name),
                 p.age,
+                escapeCSV(p.phone),
+                escapeCSV(p.address),
                 escapeCSV(p.symptoms),
                 escapeCSV(p.history),
                 escapeCSV(hr),
                 escapeCSV(bp),
                 escapeCSV(o2),
                 escapeCSV(p.triageLevel),
+                escapeCSV(p.department),
                 p.score,
                 escapeCSV(p.recommendedDoctor),
                 escapeCSV(p.status),

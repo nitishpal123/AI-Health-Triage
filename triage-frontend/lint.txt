@@ -1,0 +1,10 @@
+
+> triage-frontend@0.0.0 lint
+> eslint .
+
+
+C:\New folder\AI-Health-Triage\triage-frontend\src\components\PatientList.jsx
+  147:11  error  Parsing error: Unexpected token }
+
+Γ£û 1 problem (1 error, 0 warnings)
+

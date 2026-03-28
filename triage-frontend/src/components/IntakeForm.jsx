@@ -5,6 +5,8 @@ export default function IntakeForm({ onPatientAdded }) {
   const [formData, setFormData] = useState({
     name: '',
     age: '',
+    phone: '',
+    address: '',
     symptoms: '',
     history: '',
     heartRate: '',
@@ -23,10 +25,11 @@ export default function IntakeForm({ onPatientAdded }) {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Format vitals
     const payload = {
       name: formData.name,
       age: parseInt(formData.age),
+      phone: formData.phone,
+      address: formData.address,
       symptoms: formData.symptoms,
       history: formData.history,
       vitals: {
@@ -48,7 +51,7 @@ export default function IntakeForm({ onPatientAdded }) {
       
       // Reset form
       setFormData({
-        name: '', age: '', symptoms: '', history: '',
+        name: '', age: '', phone: '', address: '', symptoms: '', history: '',
         heartRate: '', bloodPressure: '', oxygenLevel: ''
       });
     } catch (error) {
@@ -77,6 +80,24 @@ export default function IntakeForm({ onPatientAdded }) {
             type="number" name="age" required
             placeholder="e.g. 45"
             value={formData.age} onChange={handleChange} 
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Phone Number</label>
+          <input 
+            type="tel" name="phone"
+            placeholder="e.g. 555-0199"
+            value={formData.phone} onChange={handleChange} 
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Address</label>
+          <input 
+            type="text" name="address"
+            placeholder="e.g. 123 Main St"
+            value={formData.address} onChange={handleChange} 
           />
         </div>
 
