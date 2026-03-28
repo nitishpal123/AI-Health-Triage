@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import IntakeForm from './components/IntakeForm';
 import PatientList from './components/PatientList';
-import { Activity, Download } from 'lucide-react';
+import { Activity, Download, Search } from 'lucide-react';
 
 function App() {
   const [allPatients, setAllPatients] = useState([]);
   const [activeTab, setActiveTab] = useState('waiting');
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const fetchPatients = async () => {
     try {
@@ -44,15 +45,28 @@ function App() {
     }
   };
 
-  const patients = allPatients.filter(p => p.status === 'waiting');
-  const historyPatients = allPatients.filter(p => p.status !== 'waiting');
+  const allWaiting = allPatients.filter(p => p.status === 'waiting');
 
   const stats = {
-    critical: patients.filter(p => p.triageLevel === 'Critical').length,
-    urgent: patients.filter(p => p.triageLevel === 'Urgent').length,
-    standard: patients.filter(p => p.triageLevel === 'Standard').length,
-    total: patients.length
+    critical: allWaiting.filter(p => p.triageLevel === 'Critical').length,
+    urgent: allWaiting.filter(p => p.triageLevel === 'Urgent').length,
+    standard: allWaiting.filter(p => p.triageLevel === 'Standard').length,
+    total: allWaiting.length
   };
+
+  const filteredPatients = allPatients.filter(p => {
+    if (!searchTerm) return true;
+    const term = searchTerm.toLowerCase();
+    return (
+      p.name.toLowerCase().includes(term) ||
+      p.symptoms.toLowerCase().includes(term) ||
+      (p.history && p.history.toLowerCase().includes(term)) ||
+      (p.recommendedDoctor && p.recommendedDoctor.toLowerCase().includes(term))
+    );
+  });
+
+  const patients = filteredPatients.filter(p => p.status === 'waiting');
+  const historyPatients = filteredPatients.filter(p => p.status !== 'waiting');
 
   const downloadReport = () => {
     window.open('http://localhost:3001/api/reports/history', '_blank');
@@ -123,6 +137,27 @@ function App() {
           >
             Patient History ({historyPatients.length})
           </button>
+        </div>
+
+        <div style={{ position: 'relative', marginBottom: '1rem' }}>
+          <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+          <input 
+            type="text" 
+            placeholder="Search patients by name, symptoms, history, or doctor..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ 
+              width: '100%', 
+              padding: '0.75rem 0.75rem 0.75rem 2.8rem', 
+              borderRadius: '8px', 
+              border: '1px solid var(--border-color)', 
+              backgroundColor: 'var(--background-card)', 
+              color: 'var(--text-primary)',
+              fontSize: '1rem',
+              outline: 'none',
+              boxSizing: 'border-box'
+            }}
+          />
         </div>
 
         <div style={{display: 'flex', flexDirection: 'column', overflow: 'hidden', flex: 1}}>
