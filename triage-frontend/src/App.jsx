@@ -1,121 +1,101 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import React, { useState, useEffect } from 'react';
+import IntakeForm from './components/IntakeForm';
+import PatientList from './components/PatientList';
+import { Activity } from 'lucide-react';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [patients, setPatients] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchPatients = async () => {
+    try {
+      const res = await fetch('http://localhost:3001/api/patients');
+      const data = await res.json();
+      setPatients(data.filter(p => p.status === 'waiting'));
+    } catch (err) {
+      console.error("Failed to fetch patients", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPatients();
+    // Poll every 30 seconds for real-time vibe
+    const interval = setInterval(fetchPatients, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handlePatientAdded = () => {
+    fetchPatients();
+  };
+
+  const handleStatusUpdate = async (id, status) => {
+    try {
+      await fetch(`http://localhost:3001/api/patients/${id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      fetchPatients();
+    } catch (err) {
+      console.error("Failed to update status", err);
+    }
+  };
+
+  const stats = {
+    critical: patients.filter(p => p.triageLevel === 'Critical').length,
+    urgent: patients.filter(p => p.triageLevel === 'Urgent').length,
+    standard: patients.filter(p => p.triageLevel === 'Standard').length,
+    total: patients.length
+  };
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <div className="app-container">
+      <header>
+        <h1>
+          <Activity size={28} color="var(--accent-blue)" /> 
+          AI Health Triage
+        </h1>
+        <div style={{display:'flex', alignItems:'center', gap: '1rem', color: 'var(--text-secondary)'}}>
+          Live System • {new Date().toLocaleDateString()}
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+      </header>
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+      <div style={{display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
+        <div className="stats-grid">
+          <div className="stat-box critical">
+            <h4>Critical</h4>
+            <div className="count">{stats.critical}</div>
+          </div>
+          <div className="stat-box urgent">
+            <h4>Urgent</h4>
+            <div className="count">{stats.urgent}</div>
+          </div>
+          <div className="stat-box standard">
+            <h4>Standard</h4>
+            <div className="count">{stats.standard}</div>
+          </div>
+          <div className="stat-box">
+            <h4>Total Waiting</h4>
+            <div className="count">{stats.total}</div>
+          </div>
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+        
+        <IntakeForm onPatientAdded={handlePatientAdded} />
+      </div>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+      <div style={{display: 'flex', flexDirection: 'column', overflow: 'hidden'}}>
+        {loading ? (
+          <div className="glass-panel" style={{display:'flex', justifyContent:'center', alignItems:'center', height:'100%'}}>
+            Loading AI Triage System...
+          </div>
+        ) : (
+          <PatientList patients={patients} onStatusUpdate={handleStatusUpdate} />
+        )}
+      </div>
+    </div>
+  );
 }
 
-export default App
+export default App;
