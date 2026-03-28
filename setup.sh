@@ -28,8 +28,8 @@ fi
 echo "[3/4] Waiting 10 seconds for MongoDB to initialize securely..."
 sleep 10
 
-echo "[4/4] Seeding default medical users to the database inside backend container..."
-docker exec -it triage-backend node src/seed.js
+echo "[4/4] Applying database migrations and seeding inside backend container..."
+docker exec -it triage-backend npm run migrate
 
 echo "==========================================="
 echo "✅ Setup Complete!"

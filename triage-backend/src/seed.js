@@ -40,7 +40,7 @@ const seedDB = async () => {
         });
 
         const salt = await bcrypt.genSalt(10);
-        const password = await bcrypt.hash('password123', salt);
+        const password = await bcrypt.hash('password@123', salt);
 
         console.log('Creating System Roles (Users)...');
         
