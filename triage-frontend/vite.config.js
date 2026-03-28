@@ -8,6 +8,13 @@ export default defineConfig({
     host: true,
     open: false,
     port: parseInt(process.env.FRONTEND_PORT) || 3000,
+    watch: {
+      usePolling: true,
+    },
+    hmr: {
+      host: 'localhost',
+      port: 3000,
+    },
     proxy: {
       '/api': {
         target: process.env.API_TARGET || 'http://backend:5000',

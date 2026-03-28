@@ -20,7 +20,7 @@ const loginTime = async (req, res) => {
     try {
         const { email, password } = req.body;
         
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ email }).populate(['departmentId', 'tenantId']);
         if (!user) return res.status(401).json({ message: 'Invalid email or password' });
         
         const isMatch = await bcrypt.compare(password, user.password);
@@ -36,8 +36,10 @@ const loginTime = async (req, res) => {
             name: user.name,
             email: user.email,
             role: user.role,
-            tenantId: user.tenantId,
-            departmentId: user.departmentId,
+            tenantId: user.tenantId?._id,
+            tenantName: user.tenantId?.name,
+            departmentId: user.departmentId?._id,
+            departmentName: user.departmentId?.name,
             accessToken,
             refreshToken
         });
