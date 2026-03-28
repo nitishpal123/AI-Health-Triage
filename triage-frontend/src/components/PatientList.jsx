@@ -1,391 +1,178 @@
 import React, { useState } from 'react';
-import { Clock, Activity, AlertTriangle, CheckCircle, Flame, User, Search, Phone, MapPin, Stethoscope, FileText, Calendar, Paperclip } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { fetchPatients, updatePatientStatus, updatePatientReport } from '../api/patientService';
+import { Clock, Activity, AlertTriangle, FileText, CheckCircle } from 'lucide-react';
 
-export default function PatientList({ patients, onStatusUpdate, onReportUpdate, isHistory }) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [editingReportId, setEditingReportId] = useState(null);
-  const [tempReport, setTempReport] = useState('');
-  const [tempAttachments, setTempAttachments] = useState([]);
+const PatientList = () => {
+  const queryClient = useQueryClient();
+  const [selectedPatient, setSelectedPatient] = useState(null);
+  const [medicalReport, setMedicalReport] = useState("");
 
-  const toDataUrl = (file) => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+  const { data: patients = [], isLoading, isError } = useQuery({
+    queryKey: ['patients'],
+    queryFn: fetchPatients
   });
 
-  const formatFileSize = (size = 0) => {
-    if (!size || size < 1024) return `${size || 0} B`;
-    const kb = size / 1024;
-    if (kb < 1024) return `${kb.toFixed(1)} KB`;
-    return `${(kb / 1024).toFixed(1)} MB`;
-  };
+  const statusMutation = useMutation({
+    mutationFn: updatePatientStatus,
+    onSuccess: () => queryClient.invalidateQueries(['patients'])
+  });
 
-  const handleAttachmentChange = async (event) => {
-    const files = Array.from(event.target.files || []);
-    if (files.length === 0) return;
+  const reportMutation = useMutation({
+    mutationFn: updatePatientReport,
+    onSuccess: () => {
+        queryClient.invalidateQueries(['patients']);
+        setSelectedPatient(null);
+        setMedicalReport("");
+    }
+  });
 
-    const supportedFiles = files.filter(file => (
-      file.type === 'application/pdf' || file.type.startsWith('image/')
-    ));
-
-    const mappedFiles = await Promise.all(
-      supportedFiles.map(async (file) => ({
-        name: file.name,
-        type: file.type,
-        size: file.size,
-        dataUrl: await toDataUrl(file)
-      }))
-    );
-
-    setTempAttachments(prev => [...prev, ...mappedFiles]);
-    event.target.value = '';
-  };
-
-  const removeAttachment = (indexToRemove) => {
-    setTempAttachments(prev => prev.filter((_, index) => index !== indexToRemove));
-  };
-
-  const downloadAttachment = (attachment) => {
-    if (!attachment?.dataUrl) return;
-    const link = document.createElement('a');
-    link.href = attachment.dataUrl;
-    link.download = attachment.name || 'attachment';
-    link.click();
-  };
-  if (!patients || patients.length === 0) {
-    return (
-      <div className="glass-panel" style={{ height: '100%' }}>
-        <h2>{isHistory ? 'Patient History' : 'Active Triage Queue'}</h2>
-        <div className="empty-state">
-          <CheckCircle size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
-          <h3>{isHistory ? 'No History' : 'All clear!'}</h3>
-          <p>{isHistory ? 'No past patients found.' : 'No patients currently in the active triage queue.'}</p>
-        </div>
-      </div>
-    );
-  }
-
-  const getTriageIcon = (level) => {
-    switch (level) {
-      case 'Critical': return <AlertTriangle size={14} />;
-      case 'Urgent': return <Flame size={14} />;
-      default: return <Clock size={14} />;
+  const getTriageColor = (level) => {
+    switch(level) {
+      case 'Critical': return '#ef4444';
+      case 'Urgent': return '#f59e0b';
+      case 'Standard': return '#10b981';
+      default: return '#6b7280';
     }
   };
 
-  const getTriageClass = (level) => {
-    return level.toLowerCase().replace(' ', '-');
+  const getWaitBadgeColor = (level) => {
+    switch(level) {
+      case 'Critical': return { bg: '#fee2e2', text: '#b91c1c' };
+      case 'Urgent': return { bg: '#fef3c7', text: '#d97706' };
+      case 'Standard': return { bg: '#d1fae5', text: '#059669' };
+      default: return { bg: '#f3f4f6', text: '#4b5563' };
+    }
   };
 
-  const getTimeElapsed = (timestamp) => {
-    const mins = Math.floor((new Date() - new Date(timestamp)) / 60000);
-    if (mins < 1) return 'Just now';
-    if (mins < 60) return `${mins}m ago`;
-    return `${Math.floor(mins / 60)}h ${mins % 60}m ago`;
-  };
-
-  const formatDischargeTime = (timestamp) => {
-    if (!timestamp) return '';
-    const date = new Date(timestamp);
-    return date.toLocaleString();
-  };
-
-  const displayedPatients = searchTerm.trim()
-    ? patients.filter(p =>
-      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (p.symptoms && p.symptoms.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (p.id && p.id.toLowerCase().includes(searchTerm.toLowerCase()))
-    )
-    : patients;
+  if (isLoading) return <div style={{ textAlign: 'center', padding: '2rem' }}>Loading Patient Triage Data...</div>;
+  if (isError) return <div style={{ textAlign: 'center', padding: '2rem', color: 'red' }}>Error loading patients</div>;
 
   return (
-    <div className="glass-panel" style={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
-        <div>
-          <h2>{isHistory ? 'Patient History Records' : 'Active Triage Queue'}</h2>
-          {!isHistory && (
-            <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-              Sorted dynamically by AI Priority Score
-            </div>
-          )}
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
-          <Search size={16} style={{ position: 'absolute', left: '10px', color: 'var(--text-secondary)' }} />
-          <input
-            type="text"
-            placeholder={isHistory ? "Search history..." : "Search active patients..."}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{
-              padding: '0.4rem 1rem 0.4rem 2.2rem',
-              borderRadius: '8px',
-              border: '1px solid var(--border-color)',
-              backgroundColor: 'var(--background-main)',
-              color: 'var(--text-primary)',
-              fontSize: '0.875rem',
-              minWidth: '220px'
-            }}
-          />
-        </div>
-      </div>
-
-      <div className="patient-list">
-        {displayedPatients.length === 0 ? (
-          <div className="empty-state" style={{ marginTop: '2rem' }}>
-            <Search size={32} style={{ marginBottom: '1rem', opacity: 0.5 }} />
-            <h3>No results found</h3>
-            <p>No patients match "{searchTerm}"</p>
-          </div>
-        ) : (
-          displayedPatients.map((patient) => (
-            <div key={patient.id} className={`patient-card ${getTriageClass(patient.triageLevel)}`}>
-
-              <div className="patient-info" style={{ flex: 1 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                  <div>
-                    <h3>
-                      <User size={18} /> {patient.name} <span style={{ fontWeight: '400', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>({patient.age}y)</span>
-                    </h3>
-                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      <div className={`badge ${getTriageClass(patient.triageLevel)}`}>
-                        {getTriageIcon(patient.triageLevel)} {patient.triageLevel} (Score: {patient.score})
-                      </div>
-                      {patient.department && (
-                        <div className="badge" style={{ backgroundColor: 'var(--background-card)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>
-                          <Stethoscope size={14} /> {patient.department}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
-                    <Clock size={12} /> {getTimeElapsed(patient.timestamp)}
-                    {isHistory && patient.dischargedAt && (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                        <Calendar size={12} style={{ marginLeft: '0.5rem' }} />
-                        Discharged: {formatDischargeTime(patient.dischargedAt)}
-                      </span>
-                    )}
-                  </div>
+    <div style={{ padding: '1.5rem', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1.5rem' }}>
+        {patients.map(patient => {
+          const waitColors = getWaitBadgeColor(patient.triageLevel);
+          
+          return (
+          <div key={patient.id} style={{ 
+            background: 'white', borderRadius: '1rem', 
+            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', 
+            borderTop: `4px solid ${getTriageColor(patient.triageLevel)}`,
+            overflow: 'hidden'
+          }}>
+            <div style={{ padding: '1.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 'bold', color: '#1f2937' }}>{patient.name}</h3>
+                  <p style={{ margin: 0, color: '#6b7280', fontSize: '0.875rem' }}>ID: {patient.id.substring(0,8)} • {patient.age} yrs</p>
                 </div>
-
-                {(patient.phone || patient.address) && (
-                  <div style={{ display: 'flex', gap: '1rem', marginBottom: '0.75rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                    {patient.phone && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                        <Phone size={14} /> {patient.phone}
-                      </div>
-                    )}
-                    {patient.address && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                        <MapPin size={14} /> {patient.address}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                <p><strong>Symptoms:</strong> {patient.symptoms}</p>
-                {patient.history && <p style={{ marginTop: '0.25rem' }}><strong>History:</strong> {patient.history}</p>}
-                {patient.recommendedDoctor && (
-                  <p style={{ marginTop: '0.35rem', color: 'var(--accent-blue)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                    <Stethoscope size={14} /> <strong>Suggested Doctor:</strong> {patient.recommendedDoctor}
-                  </p>
-                )}
-
-                <div className="vitals-tags">
-                  {patient.vitals?.heartRate && (
-                    <div className="vital-tag"><Activity size={12} /> HR: {patient.vitals.heartRate}</div>
-                  )}
-                  {patient.vitals?.bloodPressure && (
-                    <div className="vital-tag">BP: {patient.vitals.bloodPressure}</div>
-                  )}
-                  {patient.vitals?.oxygenLevel && (
-                    <div className="vital-tag">SpO2: {patient.vitals.oxygenLevel}%</div>
-                  )}
-                </div>
-
-                {isHistory && (
-                  <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: 'var(--background-main)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                      <h4 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <FileText size={14} /> Medical Report
-                      </h4>
-                      {editingReportId !== patient.id && (
-                        <button 
-                          style={{ padding: '0.2rem 0.6rem', fontSize: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--background-card)', color: 'var(--text-primary)', cursor: 'pointer' }} 
-                          onClick={() => {
-                            setEditingReportId(patient.id);
-                            setTempReport(patient.medicalReport || '');
-                            setTempAttachments(patient.reportAttachments || []);
-                          }}
-                        >
-                          {patient.medicalReport ? 'Edit' : 'Add Report'}
-                        </button>
-                      )}
-                    </div>
-                    
-                    {editingReportId === patient.id ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        <textarea
-                          value={tempReport}
-                          onChange={(e) => setTempReport(e.target.value)}
-                          placeholder="Type medical report here..."
-                          style={{ width: '100%', minHeight: '80px', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--background-card)', color: 'var(--text-primary)', fontFamily: 'inherit', resize: 'vertical' }}
-                        />
-
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                          <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                            Upload report files (PDF or photos)
-                          </label>
-                          <input
-                            type="file"
-                            accept="application/pdf,image/*"
-                            multiple
-                            onChange={handleAttachmentChange}
-                            style={{ fontSize: '0.8rem' }}
-                          />
-
-                          {tempAttachments.length > 0 && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                              {tempAttachments.map((attachment, index) => (
-                                <div
-                                  key={`${attachment.name}-${index}`}
-                                  style={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    padding: '0.35rem 0.5rem',
-                                    borderRadius: '4px',
-                                    border: '1px solid var(--border-color)',
-                                    backgroundColor: 'var(--background-card)',
-                                    fontSize: '0.8rem'
-                                  }}
-                                >
-                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', minWidth: 0 }}>
-                                    <Paperclip size={13} />
-                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                      {attachment.name}
-                                    </span>
-                                    <span style={{ color: 'var(--text-secondary)' }}>
-                                      ({formatFileSize(attachment.size)})
-                                    </span>
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onClick={() => removeAttachment(index)}
-                                    style={{
-                                      padding: '0.2rem 0.45rem',
-                                      fontSize: '0.75rem',
-                                      borderRadius: '4px',
-                                      border: '1px solid var(--border-color)',
-                                      backgroundColor: 'var(--background-main)',
-                                      color: 'var(--text-primary)',
-                                      cursor: 'pointer'
-                                    }}
-                                  >
-                                    Remove
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-
-                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                          <button
-                            type="button"
-                            style={{ padding: '0.3rem 0.8rem', fontSize: '0.8rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--background-card)', color: 'var(--text-primary)', cursor: 'pointer' }}
-                            onClick={() => {
-                              setEditingReportId(null);
-                              setTempAttachments([]);
-                            }}
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            type="button"
-                            style={{ padding: '0.3rem 0.8rem', fontSize: '0.8rem', borderRadius: '4px', border: 'none', backgroundColor: 'var(--accent-blue)', color: 'white', cursor: 'pointer' }}
-                            onClick={() => {
-                              onReportUpdate(patient.id, tempReport, tempAttachments);
-                              setEditingReportId(null);
-                              setTempAttachments([]);
-                            }}
-                          >
-                            Save
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                        <p style={{ margin: 0, color: patient.medicalReport ? 'var(--text-primary)' : 'var(--text-secondary)', fontStyle: patient.medicalReport ? 'normal' : 'italic', whiteSpace: 'pre-wrap', fontSize: '0.875rem' }}>
-                          {patient.medicalReport || "No medical report added yet."}
-                        </p>
-
-                        {Array.isArray(patient.reportAttachments) && patient.reportAttachments.length > 0 && (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                            {patient.reportAttachments.map((attachment, index) => (
-                              <button
-                                key={`${attachment.name}-${index}`}
-                                type="button"
-                                onClick={() => downloadAttachment(attachment)}
-                                style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '0.4rem',
-                                  width: 'fit-content',
-                                  padding: '0.3rem 0.55rem',
-                                  borderRadius: '6px',
-                                  border: '1px solid var(--border-color)',
-                                  backgroundColor: 'var(--background-card)',
-                                  color: 'var(--text-primary)',
-                                  cursor: 'pointer',
-                                  fontSize: '0.78rem'
-                                }}
-                              >
-                                <Paperclip size={13} />
-                                {attachment.name} ({formatFileSize(attachment.size)})
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
+                <span style={{ 
+                  background: waitColors.bg, color: waitColors.text,
+                  padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.875rem', fontWeight: '600'
+                }}>
+                  {patient.triageLevel} ({patient.score}/100)
+                </span>
               </div>
 
-              <div style={{ marginLeft: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', justifyContent: 'center' }}>
-                {!isHistory ? (
-                  <button
-                    className="action-btn success"
-                    title="Mark as Treated / Discharge"
-                    onClick={() => onStatusUpdate(patient.id, 'treated')}
+              {patient.estimatedWaitTime !== undefined && (
+                <div style={{ marginTop: '0.5rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: '#4b5563' }}>
+                    <Clock size={16} /> 
+                    Wait Time: {patient.estimatedWaitTime === 0 ? 'Immediate Action Required' : `~${patient.estimatedWaitTime} mins`}
+                </div>
+              )}
+
+              {/* Vitals Summary */}
+              {patient.vitals && (
+                <div style={{ display: 'flex', gap: '1rem', background: '#f8fafc', padding: '0.75rem', borderRadius: '0.5rem', marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#0f172a', fontSize: '0.875rem' }}>
+                    <Activity size={16} color="#3b82f6" /> {patient.vitals.heartRate} bpm
+                  </div>
+                  <div style={{ color: '#0f172a', fontSize: '0.875rem' }}>
+                    BP: {patient.vitals.bloodPressure}
+                  </div>
+                  <div style={{ color: '#0f172a', fontSize: '0.875rem' }}>
+                    O2: {patient.vitals.oxygenLevel}%
+                  </div>
+                </div>
+              )}
+
+              {/* AI Reasoning */}
+              {patient.triageReasoning && (
+                  <div style={{ marginBottom: '1rem', padding: '0.75rem', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '0.375rem' }}>
+                      <div style={{ fontSize: '0.75rem', fontWeight: '600', color: '#1d4ed8', marginBottom: '0.25rem' }}>AI ASSESSMENT:</div>
+                      <span style={{ fontSize: '0.875rem', color: '#1e3a8a' }}>{patient.triageReasoning}</span>
+                  </div>
+              )}
+
+              <div style={{ marginBottom: '1rem' }}>
+                <div style={{ fontSize: '0.875rem', fontWeight: '600', color: '#374151', marginBottom: '0.25rem' }}>Symptoms:</div>
+                <p style={{ margin: 0, fontSize: '0.875rem', color: '#4b5563' }}>{patient.symptoms}</p>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb' }}>
+                <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                  Status: <span style={{ fontWeight: '500', color: patient.status === 'waiting' ? '#f59e0b' : '#10b981' }}>{patient.status.toUpperCase()}</span>
+                </div>
+                
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  {patient.status === 'waiting' && (
+                    <button 
+                      onClick={() => statusMutation.mutate({ id: patient.id, status: 'treated' })}
+                      style={{ background: '#10b981', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.375rem', fontSize: '0.875rem', fontWeight: '500', cursor: 'pointer' }}
+                    >
+                      Mark Treated
+                    </button>
+                  )}
+                  
+                  <button 
+                    onClick={() => { setSelectedPatient(patient); setMedicalReport(patient.medicalReport || ""); }}
+                    style={{ background: '#f3f4f6', color: '#374151', border: '1px solid #d1d5db', padding: '0.5rem 1rem', borderRadius: '0.375rem', fontSize: '0.875rem', fontWeight: '500', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
                   >
-                    <CheckCircle size={20} />
+                    <FileText size={16} /> Report
                   </button>
-                ) : (
-                  <div style={{
-                    padding: '0.4rem 0.8rem',
-                    borderRadius: '12px',
-                    backgroundColor: 'rgba(39, 174, 96, 0.1)',
-                    color: '#27ae60',
-                    fontWeight: '500',
-                    fontSize: '0.875rem',
-                    border: '1px solid rgba(39, 174, 96, 0.2)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.25rem'
-                  }}>
-                    <CheckCircle size={14} /> Treated
-                  </div>
-                )}
+                </div>
               </div>
             </div>
-          ))
-        )}
+          </div>
+        )})}
       </div>
+
+      {/* Report Modal */}
+      {selectedPatient && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', zIndex: 1000 }}>
+          <div style={{ background: 'white', padding: '2rem', borderRadius: '1rem', width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
+            <h2 style={{ margin: '0 0 1.5rem 0', fontSize: '1.5rem' }}>Medical Report: {selectedPatient.name}</h2>
+            
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Clinical Notes</label>
+              <textarea 
+                value={medicalReport}
+                onChange={(e) => setMedicalReport(e.target.value)}
+                style={{ width: '100%', minHeight: '150px', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #d1d5db', resize: 'vertical' }}
+                placeholder="Enter examination details, diagnosis, and treatment plan..."
+              />
+            </div>
+            
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+              <button 
+                onClick={() => setSelectedPatient(null)}
+                style={{ padding: '0.5rem 1rem', background: 'white', border: '1px solid #d1d5db', borderRadius: '0.375rem', cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => reportMutation.mutate({ id: selectedPatient.id, report: medicalReport })}
+                style={{ padding: '0.5rem 1.5rem', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer', fontWeight: '500' }}
+              >
+                Save Report
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
-}
+};
+
+export default PatientList;
