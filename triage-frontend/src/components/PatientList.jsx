@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, Activity, AlertTriangle, CheckCircle, Flame, User } from 'lucide-react';
+import { Clock, Activity, AlertTriangle, CheckCircle, Flame, User, Stethoscope } from 'lucide-react';
 
 export default function PatientList({ patients, onStatusUpdate, isHistory }) {
   if (!patients || patients.length === 0) {
@@ -65,6 +65,11 @@ export default function PatientList({ patients, onStatusUpdate, isHistory }) {
               
               <p><strong>Symptoms:</strong> {patient.symptoms}</p>
               {patient.history && <p style={{marginTop: '0.25rem'}}><strong>History:</strong> {patient.history}</p>}
+              {patient.recommendedDoctor && (
+                <p style={{marginTop: '0.35rem', color: 'var(--accent-blue)', display: 'flex', alignItems: 'center', gap: '0.25rem'}}>
+                  <Stethoscope size={14} /> <strong>Suggested Doctor:</strong> {patient.recommendedDoctor}
+                </p>
+              )}
               
               <div className="vitals-tags">
                 {patient.vitals?.heartRate && (

@@ -18,6 +18,7 @@ let patients = [
         vitals: { heartRate: "120", bloodPressure: "160/100", oxygenLevel: "92" },
         triageLevel: "Critical",
         score: 95,
+        recommendedDoctor: "Emergency Physician (Cardiologist Consult)",
         status: "waiting",
         timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString()
     },
@@ -30,6 +31,7 @@ let patients = [
         vitals: { heartRate: "75", bloodPressure: "120/80", oxygenLevel: "98" },
         triageLevel: "Non-urgent",
         score: 15,
+        recommendedDoctor: "Infectious Disease Specialist",
         status: "waiting",
         timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString()
     }
@@ -56,6 +58,7 @@ app.post('/api/patients', (req, res) => {
         vitals: vitals || {},
         triageLevel: triageResult.level,
         score: triageResult.score,
+        recommendedDoctor: triageResult.recommendedDoctor,
         status: "waiting",
         timestamp: new Date().toISOString()
     };
@@ -84,7 +87,7 @@ app.get('/api/reports/history', (req, res) => {
         }
         
         let csvRows = [];
-        const headers = ['ID', 'Name', 'Age', 'Symptoms', 'History', 'Heart Rate', 'Blood Pressure', 'Oxygen Level', 'Triage Level', 'Score', 'Status', 'Timestamp'];
+        const headers = ['ID', 'Name', 'Age', 'Symptoms', 'History', 'Heart Rate', 'Blood Pressure', 'Oxygen Level', 'Triage Level', 'Score', 'Suggested Doctor', 'Status', 'Timestamp'];
         csvRows.push(headers.join(','));
         
         patients.forEach(p => {
@@ -109,6 +112,7 @@ app.get('/api/reports/history', (req, res) => {
                 escapeCSV(o2),
                 escapeCSV(p.triageLevel),
                 p.score,
+                escapeCSV(p.recommendedDoctor),
                 escapeCSV(p.status),
                 escapeCSV(p.timestamp)
             ].join(','));

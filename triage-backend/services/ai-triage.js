@@ -74,7 +74,36 @@ function computeTriageScore(symptomsText, vitals, age, historyText = "") {
     // Cap score at 100 max, 0 min
     score = Math.min(Math.max(score, 0), 100);
 
-    return { score, level };
+    let recommendedDoctor = "General Physician";
+    const combinedText = (text + " " + hist).toLowerCase();
+
+    if (combinedText.includes('chest pain') || combinedText.includes('heart attack') || combinedText.includes('heart disease') || combinedText.includes('hypertension')) {
+        recommendedDoctor = "Cardiologist";
+    } else if (combinedText.includes('stroke') || combinedText.includes('seizure') || combinedText.includes('head injury') || combinedText.includes('unconscious') || combinedText.includes('unresponsive')) {
+        recommendedDoctor = "Neurologist";
+    } else if (combinedText.includes('shortness of breath') || combinedText.includes('asthma') || combinedText.includes('breathing')) {
+        recommendedDoctor = "Pulmonologist";
+    } else if (combinedText.includes('fracture') || combinedText.includes('bone')) {
+        recommendedDoctor = "Orthopedist";
+    } else if (combinedText.includes('pregnant') || combinedText.includes('pregnancy')) {
+        recommendedDoctor = "Obstetrician/Gynecologist";
+    } else if (combinedText.includes('diabetes')) {
+        recommendedDoctor = "Endocrinologist";
+    } else if (combinedText.includes('vomiting') || combinedText.includes('stomach') || combinedText.includes('abdomen') || combinedText.includes('nausea')) {
+        recommendedDoctor = "Gastroenterologist";
+    } else if (combinedText.includes('fever') || combinedText.includes('infection')) {
+        recommendedDoctor = "Infectious Disease Specialist";
+    } else if (combinedText.includes('eye') || combinedText.includes('vision')) {
+        recommendedDoctor = "Ophthalmologist";
+    }
+
+    if (level === "Critical") {
+        recommendedDoctor = "Emergency Physician (" + recommendedDoctor + " Consult)";
+    } else if (level === "Urgent") {
+        recommendedDoctor = recommendedDoctor === "General Physician" ? "Urgent Care Physician" : recommendedDoctor + " (Priority)";
+    }
+
+    return { score, level, recommendedDoctor };
 }
 
 module.exports = { computeTriageScore };
