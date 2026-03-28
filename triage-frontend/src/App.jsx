@@ -11,7 +11,7 @@ function App() {
     try {
       const res = await fetch('http://localhost:3001/api/patients');
       const data = await res.json();
-      setPatients(data.filter(p => p.status === 'waiting'));
+      setPatients(data);
     } catch (err) {
       console.error("Failed to fetch patients", err);
     } finally {
@@ -43,11 +43,14 @@ function App() {
     }
   };
 
+  const waitingPatients = patients.filter(p => p.status === 'waiting');
+  const dischargedPatients = patients.filter(p => p.status === 'treated');
+
   const stats = {
-    critical: patients.filter(p => p.triageLevel === 'Critical').length,
-    urgent: patients.filter(p => p.triageLevel === 'Urgent').length,
-    standard: patients.filter(p => p.triageLevel === 'Standard').length,
-    total: patients.length
+    critical: waitingPatients.filter(p => p.triageLevel === 'Critical').length,
+    urgent: waitingPatients.filter(p => p.triageLevel === 'Urgent').length,
+    standard: waitingPatients.filter(p => p.triageLevel === 'Standard').length,
+    total: waitingPatients.length
   };
 
   return (
@@ -85,13 +88,16 @@ function App() {
         <IntakeForm onPatientAdded={handlePatientAdded} />
       </div>
 
-      <div style={{display: 'flex', flexDirection: 'column', overflow: 'hidden'}}>
+      <div style={{display: 'flex', flexDirection: 'column', overflow: 'hidden', gap: '1.5rem'}}>
         {loading ? (
-          <div className="glass-panel" style={{display:'flex', justifyContent:'center', alignItems:'center', height:'100%'}}>
+          <div className="glass-panel" style={{display:'flex', justifyContent:'center', alignItems:'center', minHeight:'200px'}}>
             Loading AI Triage System...
           </div>
         ) : (
-          <PatientList patients={patients} onStatusUpdate={handleStatusUpdate} />
+          <>
+            <PatientList patients={waitingPatients} onStatusUpdate={handleStatusUpdate} />
+            <PatientList patients={dischargedPatients} isHistory={true} />
+          </>
         )}
       </div>
     </div>
