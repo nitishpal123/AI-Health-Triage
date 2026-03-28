@@ -27,111 +27,116 @@ const PatientList = () => {
     }
   });
 
-  const getTriageColor = (level) => {
+  const getTriageTheme = (level) => {
     switch(level) {
-      case 'Critical': return '#ef4444';
-      case 'Urgent': return '#f59e0b';
-      case 'Standard': return '#10b981';
-      default: return '#6b7280';
+      case 'Critical': return { border: 'border-t-red-600', badge: 'badge-critical', bg: 'bg-red-50/50' };
+      case 'Urgent': return { border: 'border-t-orange-500', badge: 'badge-urgent', bg: 'bg-orange-50/50' };
+      case 'Standard': return { border: 'border-t-emerald-500', badge: 'badge-standard', bg: 'bg-emerald-50/50' };
+      default: return { border: 'border-t-slate-400', badge: 'badge-non-urgent', bg: 'bg-slate-50' };
     }
   };
 
-  const getWaitBadgeColor = (level) => {
-    switch(level) {
-      case 'Critical': return { bg: '#fee2e2', text: '#b91c1c' };
-      case 'Urgent': return { bg: '#fef3c7', text: '#d97706' };
-      case 'Standard': return { bg: '#d1fae5', text: '#059669' };
-      default: return { bg: '#f3f4f6', text: '#4b5563' };
-    }
-  };
-
-  if (isLoading) return <div style={{ textAlign: 'center', padding: '2rem' }}>Loading Patient Triage Data...</div>;
-  if (isError) return <div style={{ textAlign: 'center', padding: '2rem', color: 'red' }}>Error loading patients</div>;
+  if (isLoading) return (
+    <div className="flex flex-col items-center justify-center p-20 space-y-4">
+      <div className="w-10 h-10 border-4 border-slate-200 border-t-emerald-600 rounded-full animate-spin"></div>
+      <p className="text-slate-500 font-bold text-xs uppercase tracking-widest">Synchronizing Triage Data...</p>
+    </div>
+  );
+  
+  if (isError) return (
+    <div className="p-10 text-center bg-red-50 rounded-2xl border border-red-100">
+      <AlertTriangle className="mx-auto text-red-500 mb-2" />
+      <p className="text-red-700 font-bold">Clinical Data Connection Failure</p>
+      <p className="text-red-600/60 text-xs mt-1">Please verify backend service status.</p>
+    </div>
+  );
 
   return (
-    <div style={{ padding: '1.5rem', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1.5rem' }}>
+    <div className="w-full">
+      <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-6">
         {patients.map(patient => {
-          const waitColors = getWaitBadgeColor(patient.triageLevel);
+          const theme = getTriageTheme(patient.triageLevel);
           
           return (
-          <div key={patient.id} style={{ 
-            background: 'white', borderRadius: '1rem', 
-            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', 
-            borderTop: `4px solid ${getTriageColor(patient.triageLevel)}`,
-            overflow: 'hidden'
-          }}>
-            <div style={{ padding: '1.5rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+          <div key={patient.id} className={`group bg-white rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 border border-slate-200 border-t-4 ${theme.border} overflow-hidden transition-all duration-300`}>
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 'bold', color: '#1f2937' }}>{patient.name}</h3>
-                  <p style={{ margin: 0, color: '#6b7280', fontSize: '0.875rem' }}>ID: {patient.id.substring(0,8)} • {patient.age} yrs</p>
+                  <h3 className="text-lg font-black text-slate-900 group-hover:text-emerald-700 transition-colors uppercase tracking-tight leading-none">{patient.name}</h3>
+                  <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest flex items-center gap-1.5">
+                    <span className="bg-slate-100 px-1.5 py-0.5 rounded italic">ID: {patient.id.substring(0,8)}</span> 
+                    &bull; {patient.age} YEARS OLD
+                  </p>
                 </div>
-                <span style={{ 
-                  background: waitColors.bg, color: waitColors.text,
-                  padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.875rem', fontWeight: '600'
-                }}>
-                  {patient.triageLevel} ({patient.score}/100)
-                </span>
+                <div className={`badge ${theme.badge} shadow-sm border border-current/10`}>
+                  {patient.triageLevel} <span className="opacity-50 mx-1">|</span> {patient.score}
+                </div>
               </div>
 
               {patient.estimatedWaitTime !== undefined && (
-                <div style={{ marginTop: '0.5rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: '#4b5563' }}>
-                    <Clock size={16} /> 
-                    Wait Time: {patient.estimatedWaitTime === 0 ? 'Immediate Action Required' : `~${patient.estimatedWaitTime} mins`}
+                <div className={`mb-4 px-3 py-2 rounded-xl flex items-center gap-2.5 text-xs font-black uppercase tracking-wider ${patient.estimatedWaitTime === 0 ? 'bg-red-600 text-white animate-pulse' : 'bg-slate-50 text-slate-500'}`}>
+                    <Clock size={14} /> 
+                    {patient.estimatedWaitTime === 0 ? 'Immediate Intervention' : `ETD: ${patient.estimatedWaitTime} min`}
                 </div>
               )}
 
               {/* Vitals Summary */}
               {patient.vitals && (
-                <div style={{ display: 'flex', gap: '1rem', background: '#f8fafc', padding: '0.75rem', borderRadius: '0.5rem', marginBottom: '1rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#0f172a', fontSize: '0.875rem' }}>
-                    <Activity size={16} color="#3b82f6" /> {patient.vitals.heartRate} bpm
+                <div className="grid grid-cols-3 gap-2 py-3 border-y border-slate-50 mb-4 font-mono">
+                  <div className="flex flex-col items-center p-2 rounded-lg bg-slate-50/50 group/vital">
+                    <Activity size={12} className="text-blue-500 mb-1 group-hover/vital:scale-125 transition-transform" />
+                    <span className="text-[10px] font-bold text-slate-900">{patient.vitals.heartRate}</span>
+                    <span className="text-[7px] text-slate-400 uppercase font-bold tracking-tighter">BPM</span>
                   </div>
-                  <div style={{ color: '#0f172a', fontSize: '0.875rem' }}>
-                    BP: {patient.vitals.bloodPressure}
+                  <div className="flex flex-col items-center p-2 rounded-lg bg-slate-50/50">
+                    <span className="text-blue-500 text-[8px] font-black mb-1 uppercase tracking-tighter">B/P</span>
+                    <span className="text-[10px] font-bold text-slate-900">{patient.vitals.bloodPressure}</span>
+                    <span className="text-[7px] text-slate-400 uppercase font-bold tracking-tighter">mmHg</span>
                   </div>
-                  <div style={{ color: '#0f172a', fontSize: '0.875rem' }}>
-                    O2: {patient.vitals.oxygenLevel}%
+                  <div className="flex flex-col items-center p-2 rounded-lg bg-slate-50/50">
+                     <span className="text-emerald-500 text-[8px] font-black mb-1 uppercase tracking-tighter">SpO2</span>
+                    <span className="text-[10px] font-bold text-slate-900">{patient.vitals.oxygenLevel}%</span>
+                    <span className="text-[7px] text-slate-400 uppercase font-bold tracking-tighter">SAT</span>
                   </div>
                 </div>
               )}
 
               {/* AI Reasoning */}
               {patient.triageReasoning && (
-                  <div style={{ marginBottom: '1rem', padding: '0.75rem', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '0.375rem' }}>
-                      <div style={{ fontSize: '0.75rem', fontWeight: '600', color: '#1d4ed8', marginBottom: '0.25rem' }}>AI ASSESSMENT:</div>
-                      <span style={{ fontSize: '0.875rem', color: '#1e3a8a' }}>{patient.triageReasoning}</span>
+                  <div className="mb-4 p-3 bg-blue-50/50 border border-blue-100 rounded-xl group/ai">
+                      <div className="text-[8px] font-black text-blue-600 mb-1.5 flex items-center gap-1 uppercase tracking-widest">
+                        <Activity size={10} /> AI Clinical Insight
+                      </div>
+                      <p className="text-[11px] text-blue-800 leading-relaxed font-bold">{patient.triageReasoning}</p>
                   </div>
               )}
 
-              <div style={{ marginBottom: '1rem' }}>
-                <div style={{ fontSize: '0.875rem', fontWeight: '600', color: '#374151', marginBottom: '0.25rem' }}>Symptoms:</div>
-                <p style={{ margin: 0, fontSize: '0.875rem', color: '#4b5563' }}>{patient.symptoms}</p>
+              <div className="mb-6">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">Symptoms Identified</p>
+                <p className="text-xs text-slate-600 line-clamp-2 italic leading-relaxed">{patient.symptoms}</p>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb' }}>
-                <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-                  Status: <span style={{ fontWeight: '500', color: patient.status === 'waiting' ? '#f59e0b' : '#10b981' }}>{patient.status.toUpperCase()}</span>
-                </div>
-                
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  {patient.status === 'waiting' && (
-                    <button 
-                      onClick={() => statusMutation.mutate({ id: patient.id, status: 'treated' })}
-                      style={{ background: '#10b981', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.375rem', fontSize: '0.875rem', fontWeight: '500', cursor: 'pointer' }}
-                    >
-                      Mark Treated
-                    </button>
-                  )}
-                  
+              <div className="flex gap-2 pt-4 border-t border-slate-50">
+                {patient.status === 'waiting' ? (
                   <button 
-                    onClick={() => { setSelectedPatient(patient); setMedicalReport(patient.medicalReport || ""); }}
-                    style={{ background: '#f3f4f6', color: '#374151', border: '1px solid #d1d5db', padding: '0.5rem 1rem', borderRadius: '0.375rem', fontSize: '0.875rem', fontWeight: '500', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                    onClick={() => statusMutation.mutate({ id: patient.id, status: 'treated' })}
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[10px] uppercase tracking-[.15em] py-3 rounded-xl shadow-lg shadow-emerald-600/10 transition-all active:scale-95 flex items-center justify-center gap-2"
                   >
-                    <FileText size={16} /> Report
+                    <CheckCircle size={14} /> Handle Patient
                   </button>
-                </div>
+                ) : (
+                  <div className="flex-1 bg-slate-100 text-slate-400 font-bold text-[10px] uppercase tracking-widest py-3 rounded-xl flex items-center justify-center gap-2">
+                    <CheckCircle size={14} /> Treatment Done
+                  </div>
+                )}
+                
+                <button 
+                  onClick={() => { setSelectedPatient(patient); setMedicalReport(patient.medicalReport || ""); }}
+                  className="bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 p-3 rounded-xl transition-all shadow-sm active:scale-95 hover:border-slate-300"
+                  title="Medical Report"
+                >
+                  <FileText size={18} />
+                </button>
               </div>
             </div>
           </div>
@@ -140,33 +145,39 @@ const PatientList = () => {
 
       {/* Report Modal */}
       {selectedPatient && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', zIndex: 1000 }}>
-          <div style={{ background: 'white', padding: '2rem', borderRadius: '1rem', width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
-            <h2 style={{ margin: '0 0 1.5rem 0', fontSize: '1.5rem' }}>Medical Report: {selectedPatient.name}</h2>
-            
-            <div style={{ marginBottom: '1.5rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Clinical Notes</label>
-              <textarea 
-                value={medicalReport}
-                onChange={(e) => setMedicalReport(e.target.value)}
-                style={{ width: '100%', minHeight: '150px', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #d1d5db', resize: 'vertical' }}
-                placeholder="Enter examination details, diagnosis, and treatment plan..."
-              />
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-6 z-[100] transition-opacity animate-in fade-in duration-300">
+          <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden border border-white/20">
+            <div className="bg-slate-900 p-8 text-white relative">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-sky-500/10 rounded-full -mr-16 -mt-16 blur-xl"></div>
+              <h2 className="text-2xl font-black tracking-tight uppercase">Clinical Report Submission</h2>
+              <p className="text-sky-400 text-xs font-bold tracking-widest mt-1 opacity-80 uppercase">Patient: {selectedPatient.name} // Ref: {selectedPatient.id.substring(0,8)}</p>
             </div>
             
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-              <button 
-                onClick={() => setSelectedPatient(null)}
-                style={{ padding: '0.5rem 1rem', background: 'white', border: '1px solid #d1d5db', borderRadius: '0.375rem', cursor: 'pointer' }}
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={() => reportMutation.mutate({ id: selectedPatient.id, report: medicalReport })}
-                style={{ padding: '0.5rem 1.5rem', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '0.375rem', cursor: 'pointer', fontWeight: '500' }}
-              >
-                Save Report
-              </button>
+            <div className="p-8 space-y-6 bg-white">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Examination & Assessment Notes</label>
+                <textarea 
+                  value={medicalReport}
+                  onChange={(e) => setMedicalReport(e.target.value)}
+                  className="w-full min-h-[220px] bg-slate-50 border border-slate-200 rounded-2xl p-5 text-slate-800 placeholder:text-slate-300 focus:ring-2 focus:ring-sky-500 focus:bg-white outline-none transition-all text-sm leading-relaxed"
+                  placeholder="Summarize physical exam findings, confirmed diagnosis, and discharge/referral instructions..."
+                />
+              </div>
+              
+              <div className="flex gap-4">
+                <button 
+                  onClick={() => setSelectedPatient(null)}
+                  className="flex-1 bg-white hover:bg-slate-50 text-slate-500 font-bold py-4 rounded-2xl border border-slate-200 transition-colors uppercase text-xs tracking-widest"
+                >
+                  Discard
+                </button>
+                <button 
+                  onClick={() => reportMutation.mutate({ id: selectedPatient.id, report: medicalReport })}
+                  className="flex-[2] bg-sky-600 hover:bg-sky-500 text-white font-black py-4 rounded-2xl shadow-xl shadow-sky-600/20 transition-all uppercase text-xs tracking-widest flex items-center justify-center gap-3 active:scale-95"
+                >
+                  Finalize & Secure Report <CheckCircle size={16}/>
+                </button>
+              </div>
             </div>
           </div>
         </div>

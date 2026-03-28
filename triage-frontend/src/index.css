@@ -1,316 +1,56 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-:root {
-  --bg-color: #0f172a; /* Slate 900 */
-  --surface-color: #1e293b; /* Slate 800 */
-  --surface-light: #334155; /* Slate 700 */
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --accent-blue: #3b82f6; /* Blue 500 */
-  --accent-blue-hover: #2563eb;
-  
-  --critical: #ef4444; /* Red 500 */
-  --urgent: #f97316; /* Orange 500 */
-  --standard: #eab308; /* Yellow 500 */
-  --non-urgent: #22c55e; /* Green 500 */
-}
+@layer base {
+  :root {
+    --bg-color: #0f172a;
+    --surface-color: #1e293b;
+    --surface-light: #334155;
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    
+    --critical: #ef4444;
+    --urgent: #f97316;
+    --standard: #eab308;
+    --non-urgent: #22c55e;
+  }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  font-family: 'Inter', sans-serif;
-  background-color: var(--bg-color);
-  color: var(--text-primary);
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-}
-
-.app-container {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 2rem;
-  display: grid;
-  grid-template-columns: 380px 1fr;
-  gap: 2rem;
-  height: 100vh;
-}
-
-@media (max-width: 900px) {
-  .app-container {
-    grid-template-columns: 1fr;
-    height: auto;
+  body {
+    @apply bg-slate-950 text-slate-50 font-sans antialiased;
   }
 }
 
-header {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--surface-light);
-  margin-bottom: 0.5rem;
+@layer components {
+  .glass-panel {
+    @apply bg-slate-800/70 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl;
+  }
+
+  .primary-btn {
+    @apply w-full p-3.5 rounded-lg bg-blue-600 text-white font-semibold text-base cursor-pointer 
+           transition-all duration-200 flex items-center justify-center gap-2 mt-4 
+           hover:bg-blue-700 hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none;
+  }
+
+  .badge {
+    @apply text-xs px-2.5 py-1 rounded-full font-bold uppercase tracking-wider inline-flex items-center gap-1;
+  }
+
+  .badge-critical { @apply bg-red-500/20 text-red-300; }
+  .badge-urgent { @apply bg-orange-500/20 text-orange-300; }
+  .badge-standard { @apply bg-yellow-500/20 text-yellow-300; }
+  .badge-non-urgent { @apply bg-green-500/20 text-green-300; }
 }
 
-h1 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-h2 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
-  color: var(--text-primary);
-  display: flex; align-items: center; gap: 0.5rem;
-}
-
-.glass-panel {
-  background: rgba(30, 41, 59, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  padding: 1.5rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-}
-
-/* Form Styles */
-.form-group {
-  margin-bottom: 1rem;
-}
-
-label {
-  display: block;
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-}
-
-input, textarea {
-  width: 100%;
-  padding: 0.75rem;
-  border-radius: 8px;
-  border: 1px solid var(--surface-light);
-  background-color: rgba(15, 23, 42, 0.6);
-  color: var(--text-primary);
-  font-family: 'Inter', sans-serif;
-  transition: all 0.2s;
-}
-
-input:focus, textarea:focus {
-  outline: none;
-  border-color: var(--accent-blue);
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
-}
-
-.vitals-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.75rem;
-}
-
-button.primary-btn {
-  width: 100%;
-  padding: 0.875rem;
-  border-radius: 8px;
-  border: none;
-  background-color: var(--accent-blue);
-  color: white;
-  font-weight: 600;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-top: 1rem;
-}
-
-button.primary-btn:hover {
-  background-color: var(--accent-blue-hover);
-  transform: translateY(-2px);
-}
-button.primary-btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* Patient List */
-.patient-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  overflow-y: auto;
-  padding-right: 0.5rem;
-  max-height: calc(100vh - 240px);
-}
-
-.patient-list::-webkit-scrollbar {
+/* Custom Webkit Scrollbar */
+::-webkit-scrollbar {
   width: 6px;
 }
-.patient-list::-webkit-scrollbar-track {
-  background: var(--surface-color);
+::-webkit-scrollbar-track {
+  background: #1e293b;
   border-radius: 4px;
 }
-.patient-list::-webkit-scrollbar-thumb {
-  background: var(--surface-light);
+::-webkit-scrollbar-thumb {
+  background: #334155;
   border-radius: 4px;
-}
-
-.patient-card {
-  background: var(--surface-color);
-  border-radius: 12px;
-  padding: 1.25rem;
-  border-left: 5px solid transparent;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  animation: slideIn 0.4s ease-out forwards;
-}
-
-@keyframes slideIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.patient-card:hover {
-  transform: translateX(5px);
-  background: #273549;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-}
-
-/* Triage Colors */
-.patient-card.critical { border-left-color: var(--critical); }
-.patient-card.urgent { border-left-color: var(--urgent); }
-.patient-card.standard { border-left-color: var(--standard); }
-.patient-card.non-urgent { border-left-color: var(--non-urgent); }
-
-.badge {
-  font-size: 0.75rem;
-  padding: 0.25rem 0.6rem;
-  border-radius: 99px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.badge.critical { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
-.badge.urgent { background: rgba(249, 115, 22, 0.2); color: #fdba74; }
-.badge.standard { background: rgba(234, 179, 8, 0.2); color: #fdf08a; }
-.badge.non-urgent { background: rgba(34, 197, 94, 0.2); color: #86efac; }
-
-
-.patient-info h3 {
-  font-size: 1.125rem;
-  font-weight: 600;
-  margin-bottom: 0.25rem;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.patient-info p {
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-  margin-bottom: 0.5rem;
-  max-width: 600px;
-}
-
-.vitals-tags {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  margin-top: 0.75rem;
-}
-
-.vital-tag {
-  background: rgba(15, 23, 42, 0.5);
-  padding: 0.25rem 0.6rem;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  border: 1px solid rgba(255,255,255,0.05);
-}
-
-.action-btn {
-  background: transparent;
-  border: 1px solid var(--surface-light);
-  color: var(--text-primary);
-  padding: 0.5rem;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.action-btn:hover {
-  background: var(--surface-light);
-  color: #fff;
-}
-.action-btn.success:hover {
-  background: rgba(34, 197, 94, 0.2);
-  border-color: var(--non-urgent);
-  color: #86efac;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.stat-box {
-  background: var(--surface-color);
-  padding: 1rem;
-  border-radius: 12px;
-  text-align: center;
-  border: 1px solid transparent;
-  transition: all 0.3s;
-}
-
-.stat-box:hover {
-  transform: translateY(-2px);
-  border-color: var(--surface-light);
-}
-
-.stat-box h4 {
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-  margin-bottom: 0.5rem;
-}
-
-.stat-box .count {
-  font-size: 1.75rem;
-  font-weight: 700;
-}
-.stat-box.critical .count { color: #fca5a5; }
-.stat-box.urgent .count { color: #fdba74; }
-.stat-box.standard .count { color: #fdf08a; }
-.stat-box.non-urgent .count { color: #86efac; }
-
-.empty-state {
-  text-align: center;
-  padding: 3rem;
-  color: var(--text-secondary);
 }

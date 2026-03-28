@@ -40,7 +40,7 @@ const seedDB = async () => {
         });
 
         const salt = await bcrypt.genSalt(10);
-        const password = await bcrypt.hash('password@123', salt);
+        const password = await bcrypt.hash('password123', salt);
 
         console.log('Creating System Roles (Users)...');
         
@@ -50,6 +50,12 @@ const seedDB = async () => {
         // Doctors
         const drSmith = await User.create({ 
             name: "Dr. Gregory Smith", email: "dr.smith@hospital.com", password: password, role: "Doctor", 
+            tenantId: tenant._id, departmentId: cardioDept._id 
+        });
+
+        // Add requested generic doctor account
+        await User.create({ 
+            name: "Generic Doctor", email: "doctor@hospital.com", password: password, role: "Doctor", 
             tenantId: tenant._id, departmentId: cardioDept._id 
         });
 
