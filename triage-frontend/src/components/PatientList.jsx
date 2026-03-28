@@ -1,10 +1,58 @@
 import React, { useState } from 'react';
-import { Clock, Activity, AlertTriangle, CheckCircle, Flame, User, Search, Phone, MapPin, Stethoscope, FileText, Calendar } from 'lucide-react';
+import { Clock, Activity, AlertTriangle, CheckCircle, Flame, User, Search, Phone, MapPin, Stethoscope, FileText, Calendar, Paperclip } from 'lucide-react';
 
 export default function PatientList({ patients, onStatusUpdate, onReportUpdate, isHistory }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [editingReportId, setEditingReportId] = useState(null);
   const [tempReport, setTempReport] = useState('');
+  const [tempAttachments, setTempAttachments] = useState([]);
+
+  const toDataUrl = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
+  const formatFileSize = (size = 0) => {
+    if (!size || size < 1024) return `${size || 0} B`;
+    const kb = size / 1024;
+    if (kb < 1024) return `${kb.toFixed(1)} KB`;
+    return `${(kb / 1024).toFixed(1)} MB`;
+  };
+
+  const handleAttachmentChange = async (event) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) return;
+
+    const supportedFiles = files.filter(file => (
+      file.type === 'application/pdf' || file.type.startsWith('image/')
+    ));
+
+    const mappedFiles = await Promise.all(
+      supportedFiles.map(async (file) => ({
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        dataUrl: await toDataUrl(file)
+      }))
+    );
+
+    setTempAttachments(prev => [...prev, ...mappedFiles]);
+    event.target.value = '';
+  };
+
+  const removeAttachment = (indexToRemove) => {
+    setTempAttachments(prev => prev.filter((_, index) => index !== indexToRemove));
+  };
+
+  const downloadAttachment = (attachment) => {
+    if (!attachment?.dataUrl) return;
+    const link = document.createElement('a');
+    link.href = attachment.dataUrl;
+    link.download = attachment.name || 'attachment';
+    link.click();
+  };
   if (!patients || patients.length === 0) {
     return (
       <div className="glass-panel" style={{ height: '100%' }}>
@@ -115,7 +163,10 @@ export default function PatientList({ patients, onStatusUpdate, onReportUpdate, 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
                     <Clock size={12} /> {getTimeElapsed(patient.timestamp)}
                     {isHistory && patient.dischargedAt && (
-                      <><Calendar size={12} style={{marginLeft: '0.5rem'}}/> Discharged: {formatDischargeTime(patient.dischargedAt)}</>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <Calendar size={12} style={{ marginLeft: '0.5rem' }} />
+                        Discharged: {formatDischargeTime(patient.dischargedAt)}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -164,7 +215,11 @@ export default function PatientList({ patients, onStatusUpdate, onReportUpdate, 
                       {editingReportId !== patient.id && (
                         <button 
                           style={{ padding: '0.2rem 0.6rem', fontSize: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--background-card)', color: 'var(--text-primary)', cursor: 'pointer' }} 
-                          onClick={() => { setEditingReportId(patient.id); setTempReport(patient.medicalReport || ''); }}
+                          onClick={() => {
+                            setEditingReportId(patient.id);
+                            setTempReport(patient.medicalReport || '');
+                            setTempAttachments(patient.reportAttachments || []);
+                          }}
                         >
                           {patient.medicalReport ? 'Edit' : 'Add Report'}
                         </button>
@@ -179,15 +234,123 @@ export default function PatientList({ patients, onStatusUpdate, onReportUpdate, 
                           placeholder="Type medical report here..."
                           style={{ width: '100%', minHeight: '80px', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--background-card)', color: 'var(--text-primary)', fontFamily: 'inherit', resize: 'vertical' }}
                         />
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                            Upload report files (PDF or photos)
+                          </label>
+                          <input
+                            type="file"
+                            accept="application/pdf,image/*"
+                            multiple
+                            onChange={handleAttachmentChange}
+                            style={{ fontSize: '0.8rem' }}
+                          />
+
+                          {tempAttachments.length > 0 && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                              {tempAttachments.map((attachment, index) => (
+                                <div
+                                  key={`${attachment.name}-${index}`}
+                                  style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    padding: '0.35rem 0.5rem',
+                                    borderRadius: '4px',
+                                    border: '1px solid var(--border-color)',
+                                    backgroundColor: 'var(--background-card)',
+                                    fontSize: '0.8rem'
+                                  }}
+                                >
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', minWidth: 0 }}>
+                                    <Paperclip size={13} />
+                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                      {attachment.name}
+                                    </span>
+                                    <span style={{ color: 'var(--text-secondary)' }}>
+                                      ({formatFileSize(attachment.size)})
+                                    </span>
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeAttachment(index)}
+                                    style={{
+                                      padding: '0.2rem 0.45rem',
+                                      fontSize: '0.75rem',
+                                      borderRadius: '4px',
+                                      border: '1px solid var(--border-color)',
+                                      backgroundColor: 'var(--background-main)',
+                                      color: 'var(--text-primary)',
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
                         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                          <button style={{ padding: '0.3rem 0.8rem', fontSize: '0.8rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--background-card)', color: 'var(--text-primary)', cursor: 'pointer' }} onClick={() => setEditingReportId(null)}>Cancel</button>
-                          <button style={{ padding: '0.3rem 0.8rem', fontSize: '0.8rem', borderRadius: '4px', border: 'none', backgroundColor: 'var(--accent-blue)', color: 'white', cursor: 'pointer' }} onClick={() => { onReportUpdate(patient.id, tempReport); setEditingReportId(null); }}>Save</button>
+                          <button
+                            type="button"
+                            style={{ padding: '0.3rem 0.8rem', fontSize: '0.8rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--background-card)', color: 'var(--text-primary)', cursor: 'pointer' }}
+                            onClick={() => {
+                              setEditingReportId(null);
+                              setTempAttachments([]);
+                            }}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            style={{ padding: '0.3rem 0.8rem', fontSize: '0.8rem', borderRadius: '4px', border: 'none', backgroundColor: 'var(--accent-blue)', color: 'white', cursor: 'pointer' }}
+                            onClick={() => {
+                              onReportUpdate(patient.id, tempReport, tempAttachments);
+                              setEditingReportId(null);
+                              setTempAttachments([]);
+                            }}
+                          >
+                            Save
+                          </button>
                         </div>
                       </div>
                     ) : (
-                      <p style={{ margin: 0, color: patient.medicalReport ? 'var(--text-primary)' : 'var(--text-secondary)', fontStyle: patient.medicalReport ? 'normal' : 'italic', whiteSpace: 'pre-wrap', fontSize: '0.875rem' }}>
-                        {patient.medicalReport || "No medical report added yet."}
-                      </p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                        <p style={{ margin: 0, color: patient.medicalReport ? 'var(--text-primary)' : 'var(--text-secondary)', fontStyle: patient.medicalReport ? 'normal' : 'italic', whiteSpace: 'pre-wrap', fontSize: '0.875rem' }}>
+                          {patient.medicalReport || "No medical report added yet."}
+                        </p>
+
+                        {Array.isArray(patient.reportAttachments) && patient.reportAttachments.length > 0 && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                            {patient.reportAttachments.map((attachment, index) => (
+                              <button
+                                key={`${attachment.name}-${index}`}
+                                type="button"
+                                onClick={() => downloadAttachment(attachment)}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.4rem',
+                                  width: 'fit-content',
+                                  padding: '0.3rem 0.55rem',
+                                  borderRadius: '6px',
+                                  border: '1px solid var(--border-color)',
+                                  backgroundColor: 'var(--background-card)',
+                                  color: 'var(--text-primary)',
+                                  cursor: 'pointer',
+                                  fontSize: '0.78rem'
+                                }}
+                              >
+                                <Paperclip size={13} />
+                                {attachment.name} ({formatFileSize(attachment.size)})
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}

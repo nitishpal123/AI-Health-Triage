@@ -45,12 +45,12 @@ function App() {
     }
   };
 
-  const handleReportUpdate = async (id, report) => {
+  const handleReportUpdate = async (id, report, attachments = []) => {
     try {
       await fetch(`http://localhost:3001/api/patients/${id}/report`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ report })
+        body: JSON.stringify({ report, attachments })
       });
       fetchPatients();
     } catch (err) {

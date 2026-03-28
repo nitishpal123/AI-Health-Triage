@@ -94,11 +94,12 @@ app.patch('/api/patients/:id/status', (req, res) => {
 
 app.patch('/api/patients/:id/report', (req, res) => {
     const { id } = req.params;
-    const { report } = req.body;
+    const { report, attachments } = req.body;
     
     const patientIndex = patients.findIndex(p => p.id === id);
     if (patientIndex > -1) {
-        patients[patientIndex].medicalReport = report;
+        patients[patientIndex].medicalReport = report || "";
+        patients[patientIndex].reportAttachments = Array.isArray(attachments) ? attachments : [];
         res.json(patients[patientIndex]);
     } else {
         res.status(404).json({ error: "Patient not found" });
@@ -112,7 +113,7 @@ app.get('/api/reports/history', (req, res) => {
         }
         
         let csvRows = [];
-        const headers = ['ID', 'Name', 'Age', 'Phone', 'Address', 'Symptoms', 'History', 'Heart Rate', 'Blood Pressure', 'Oxygen Level', 'Triage Level', 'Department', 'Score', 'Suggested Doctor', 'Status', 'Timestamp', 'Discharged At', 'Medical Report'];
+        const headers = ['ID', 'Name', 'Age', 'Phone', 'Address', 'Symptoms', 'History', 'Heart Rate', 'Blood Pressure', 'Oxygen Level', 'Triage Level', 'Department', 'Score', 'Suggested Doctor', 'Status', 'Timestamp', 'Discharged At', 'Medical Report', 'Report Attachments'];
         csvRows.push(headers.join(','));
         
         patients.forEach(p => {
@@ -144,7 +145,8 @@ app.get('/api/reports/history', (req, res) => {
                 escapeCSV(p.status),
                 escapeCSV(p.timestamp),
                 escapeCSV(p.dischargedAt),
-                escapeCSV(p.medicalReport)
+                escapeCSV(p.medicalReport),
+                escapeCSV(Array.isArray(p.reportAttachments) ? p.reportAttachments.map(file => file.name).join('; ') : '')
             ].join(','));
         });
         
