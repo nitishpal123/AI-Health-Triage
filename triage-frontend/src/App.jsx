@@ -45,6 +45,19 @@ function App() {
     }
   };
 
+  const handleReportUpdate = async (id, report) => {
+    try {
+      await fetch(`http://localhost:3001/api/patients/${id}/report`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ report })
+      });
+      fetchPatients();
+    } catch (err) {
+      console.error("Failed to update report", err);
+    }
+  };
+
   const allWaiting = allPatients.filter(p => p.status === 'waiting');
 
   const stats = {
@@ -166,7 +179,7 @@ function App() {
               Loading AI Triage System...
             </div>
           ) : (
-            <PatientList patients={activeTab === 'waiting' ? patients : historyPatients} onStatusUpdate={handleStatusUpdate} isHistory={activeTab === 'history'} />
+            <PatientList patients={activeTab === 'waiting' ? patients : historyPatients} onStatusUpdate={handleStatusUpdate} onReportUpdate={handleReportUpdate} isHistory={activeTab === 'history'} />
           )}
         </div>
       </div>

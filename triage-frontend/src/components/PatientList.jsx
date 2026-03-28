@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { Clock, Activity, AlertTriangle, CheckCircle, Flame, User, Search, Phone, MapPin, Stethoscope } from 'lucide-react';
+import { Clock, Activity, AlertTriangle, CheckCircle, Flame, User, Search, Phone, MapPin, Stethoscope, FileText, Calendar } from 'lucide-react';
 
-export default function PatientList({ patients, onStatusUpdate, isHistory }) {
+export default function PatientList({ patients, onStatusUpdate, onReportUpdate, isHistory }) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [editingReportId, setEditingReportId] = useState(null);
+  const [tempReport, setTempReport] = useState('');
   if (!patients || patients.length === 0) {
     return (
       <div className="glass-panel" style={{ height: '100%' }}>
@@ -33,6 +35,12 @@ export default function PatientList({ patients, onStatusUpdate, isHistory }) {
     if (mins < 1) return 'Just now';
     if (mins < 60) return `${mins}m ago`;
     return `${Math.floor(mins / 60)}h ${mins % 60}m ago`;
+  };
+
+  const formatDischargeTime = (timestamp) => {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    return date.toLocaleString();
   };
 
   const displayedPatients = searchTerm.trim()
@@ -106,6 +114,9 @@ export default function PatientList({ patients, onStatusUpdate, isHistory }) {
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
                     <Clock size={12} /> {getTimeElapsed(patient.timestamp)}
+                    {isHistory && patient.dischargedAt && (
+                      <><Calendar size={12} style={{marginLeft: '0.5rem'}}/> Discharged: {formatDischargeTime(patient.dischargedAt)}</>
+                    )}
                   </div>
                 </div>
 
@@ -143,6 +154,43 @@ export default function PatientList({ patients, onStatusUpdate, isHistory }) {
                     <div className="vital-tag">SpO2: {patient.vitals.oxygenLevel}%</div>
                   )}
                 </div>
+
+                {isHistory && (
+                  <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: 'var(--background-main)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                      <h4 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <FileText size={14} /> Medical Report
+                      </h4>
+                      {editingReportId !== patient.id && (
+                        <button 
+                          style={{ padding: '0.2rem 0.6rem', fontSize: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--background-card)', color: 'var(--text-primary)', cursor: 'pointer' }} 
+                          onClick={() => { setEditingReportId(patient.id); setTempReport(patient.medicalReport || ''); }}
+                        >
+                          {patient.medicalReport ? 'Edit' : 'Add Report'}
+                        </button>
+                      )}
+                    </div>
+                    
+                    {editingReportId === patient.id ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <textarea
+                          value={tempReport}
+                          onChange={(e) => setTempReport(e.target.value)}
+                          placeholder="Type medical report here..."
+                          style={{ width: '100%', minHeight: '80px', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--background-card)', color: 'var(--text-primary)', fontFamily: 'inherit', resize: 'vertical' }}
+                        />
+                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                          <button style={{ padding: '0.3rem 0.8rem', fontSize: '0.8rem', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--background-card)', color: 'var(--text-primary)', cursor: 'pointer' }} onClick={() => setEditingReportId(null)}>Cancel</button>
+                          <button style={{ padding: '0.3rem 0.8rem', fontSize: '0.8rem', borderRadius: '4px', border: 'none', backgroundColor: 'var(--accent-blue)', color: 'white', cursor: 'pointer' }} onClick={() => { onReportUpdate(patient.id, tempReport); setEditingReportId(null); }}>Save</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p style={{ margin: 0, color: patient.medicalReport ? 'var(--text-primary)' : 'var(--text-secondary)', fontStyle: patient.medicalReport ? 'normal' : 'italic', whiteSpace: 'pre-wrap', fontSize: '0.875rem' }}>
+                        {patient.medicalReport || "No medical report added yet."}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div style={{ marginLeft: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', justifyContent: 'center' }}>

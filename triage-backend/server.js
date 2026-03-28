@@ -83,6 +83,22 @@ app.patch('/api/patients/:id/status', (req, res) => {
     const patientIndex = patients.findIndex(p => p.id === id);
     if (patientIndex > -1) {
         patients[patientIndex].status = status;
+        if (status === 'treated') {
+            patients[patientIndex].dischargedAt = new Date().toISOString();
+        }
+        res.json(patients[patientIndex]);
+    } else {
+        res.status(404).json({ error: "Patient not found" });
+    }
+});
+
+app.patch('/api/patients/:id/report', (req, res) => {
+    const { id } = req.params;
+    const { report } = req.body;
+    
+    const patientIndex = patients.findIndex(p => p.id === id);
+    if (patientIndex > -1) {
+        patients[patientIndex].medicalReport = report;
         res.json(patients[patientIndex]);
     } else {
         res.status(404).json({ error: "Patient not found" });
@@ -96,7 +112,7 @@ app.get('/api/reports/history', (req, res) => {
         }
         
         let csvRows = [];
-        const headers = ['ID', 'Name', 'Age', 'Phone', 'Address', 'Symptoms', 'History', 'Heart Rate', 'Blood Pressure', 'Oxygen Level', 'Triage Level', 'Department', 'Score', 'Suggested Doctor', 'Status', 'Timestamp'];
+        const headers = ['ID', 'Name', 'Age', 'Phone', 'Address', 'Symptoms', 'History', 'Heart Rate', 'Blood Pressure', 'Oxygen Level', 'Triage Level', 'Department', 'Score', 'Suggested Doctor', 'Status', 'Timestamp', 'Discharged At', 'Medical Report'];
         csvRows.push(headers.join(','));
         
         patients.forEach(p => {
@@ -126,7 +142,9 @@ app.get('/api/reports/history', (req, res) => {
                 p.score,
                 escapeCSV(p.recommendedDoctor),
                 escapeCSV(p.status),
-                escapeCSV(p.timestamp)
+                escapeCSV(p.timestamp),
+                escapeCSV(p.dischargedAt),
+                escapeCSV(p.medicalReport)
             ].join(','));
         });
         
