@@ -12,7 +12,7 @@ class ReportAnalyzerService {
         this.geminiKey = process.env.GEMINI_API_KEY;
         if (this.geminiKey) {
             this.genAI = new GoogleGenerativeAI(this.geminiKey);
-            this.geminiModel = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            this.geminiModel = this.genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
         }
 
         // Initialize OpenAI securely
