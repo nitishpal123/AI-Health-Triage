@@ -1,7 +1,7 @@
 // Simulated AI Scoring Engine for Medical Triage
 // In a real scenario, this would call an LLM (like Gemini) or ML Model to evaluate clinical text + vitals.
 
-function computeTriageScore(symptomsText, vitals, age) {
+function computeTriageScore(symptomsText, vitals, age, historyText = "") {
     let score = 0;
     const text = symptomsText.toLowerCase();
 
@@ -47,9 +47,18 @@ function computeTriageScore(symptomsText, vitals, age) {
         }
     }
 
-    // 3. Age Risk Factor
+    // 3. Age & History Risk Factors
     if (age > 65 || age < 2) {
         score += 10;
+    }
+    
+    const hist = historyText.toLowerCase();
+    const riskHistory = ['diabetes', 'asthma', 'heart disease', 'hypertension', 'cancer', 'pregnant', 'smoker'];
+    for (const kw of riskHistory) {
+        if (hist.includes(kw)) {
+            score += 15;
+            break;
+        }
     }
 
     // 4. Categorize by Threshold

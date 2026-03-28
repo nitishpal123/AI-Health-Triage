@@ -6,6 +6,7 @@ export default function IntakeForm({ onPatientAdded }) {
     name: '',
     age: '',
     symptoms: '',
+    history: '',
     heartRate: '',
     bloodPressure: '',
     oxygenLevel: ''
@@ -27,6 +28,7 @@ export default function IntakeForm({ onPatientAdded }) {
       name: formData.name,
       age: parseInt(formData.age),
       symptoms: formData.symptoms,
+      history: formData.history,
       vitals: {
         heartRate: formData.heartRate,
         bloodPressure: formData.bloodPressure,
@@ -46,7 +48,7 @@ export default function IntakeForm({ onPatientAdded }) {
       
       // Reset form
       setFormData({
-        name: '', age: '', symptoms: '',
+        name: '', age: '', symptoms: '', history: '',
         heartRate: '', bloodPressure: '', oxygenLevel: ''
       });
     } catch (error) {
@@ -84,6 +86,15 @@ export default function IntakeForm({ onPatientAdded }) {
             name="symptoms" required rows="3"
             placeholder="Describe patient symptoms in detail..."
             value={formData.symptoms} onChange={handleChange} 
+          ></textarea>
+        </div>
+
+        <div className="form-group">
+          <label>Medical History</label>
+          <textarea 
+            name="history" rows="2"
+            placeholder="Any chronic conditions, prior surgeries, or allergies..."
+            value={formData.history} onChange={handleChange} 
           ></textarea>
         </div>
 

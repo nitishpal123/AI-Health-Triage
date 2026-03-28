@@ -14,6 +14,7 @@ let patients = [
         name: "Jane Doe",
         age: 45,
         symptoms: "Chest pain, shortness of breath, radiating pain in left arm.",
+        history: "Hypertension, heavy smoker",
         vitals: { heartRate: "120", bloodPressure: "160/100", oxygenLevel: "92" },
         triageLevel: "Critical",
         score: 95,
@@ -25,6 +26,7 @@ let patients = [
         name: "John Smith",
         age: 28,
         symptoms: "Mild headache, slight fever.",
+        history: "None",
         vitals: { heartRate: "75", bloodPressure: "120/80", oxygenLevel: "98" },
         triageLevel: "Non-urgent",
         score: 15,
@@ -40,16 +42,17 @@ app.get('/api/patients', (req, res) => {
 });
 
 app.post('/api/patients', (req, res) => {
-    const { name, age, symptoms, vitals } = req.body;
+    const { name, age, symptoms, history, vitals } = req.body;
     
     // Call the AI Service to determine triage priority
-    const triageResult = computeTriageScore(symptoms || "", vitals, age);
+    const triageResult = computeTriageScore(symptoms || "", vitals, age, history || "");
     
     const newPatient = {
         id: uuidv4(),
         name,
         age,
         symptoms,
+        history: history || "",
         vitals: vitals || {},
         triageLevel: triageResult.level,
         score: triageResult.score,

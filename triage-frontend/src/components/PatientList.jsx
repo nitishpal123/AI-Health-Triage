@@ -66,7 +66,7 @@ export default function PatientList({ patients, onStatusUpdate, isHistory = fals
               </div>
 
               <p><strong>Symptoms:</strong> {patient.symptoms}</p>
-
+              {patient.history && <p style={{marginTop: '0.25rem'}}><strong>History:</strong> {patient.history}</p>}
               <div className="vitals-tags">
                 {patient.vitals?.heartRate && (
                   <div className="vital-tag"><Activity size={12} /> HR: {patient.vitals.heartRate}</div>
