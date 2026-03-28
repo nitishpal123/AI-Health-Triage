@@ -20,6 +20,7 @@ services:
     environment:
       - MONGODB_URI=mongodb://mongodb:27017/ai-health-triage
       - PORT=${PORT:-5000}
+      - FRONTEND_PORT=${FRONTEND_PORT:-3000}
       - JWT_SECRET=DOCKER_LOCAL_JWT_SECRET_TESTING_KEY
       - JWT_REFRESH_SECRET=DOCKER_LOCAL_JWT_REFRESH_TESTING_KEY
       # Pull AI variables safely from local machine environment
@@ -40,8 +41,9 @@ services:
     ports:
       - "${FRONTEND_PORT:-3000}:${FRONTEND_PORT:-3000}"
     environment:
-      # Note: Localhost correctly points to the external port on the user's host machine
+      - API_TARGET=http://backend:5000
       - VITE_API_URL=http://localhost:${PORT:-5000}/api
+      - PORT=${PORT:-5000}
       - FRONTEND_PORT=${FRONTEND_PORT:-3000}
     depends_on:
       - backend

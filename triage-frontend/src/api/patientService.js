@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:3001/api/patients';
+const API_URL = '/api/patients';
 
 // Helper to get token if using auth
 const getConfig = () => ({

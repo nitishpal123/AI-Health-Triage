@@ -5,7 +5,7 @@ const connectDB = require('./config/db');
 // Connect Database
 connectDB();
 
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-    console.log(`AI Triage Backend running on port ${PORT}`);
+const PORT = parseInt(process.env.PORT) || 5000;
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`AI Triage Backend running on 0.0.0.0:${PORT}`);
 });

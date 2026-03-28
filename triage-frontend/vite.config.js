@@ -7,6 +7,13 @@ export default defineConfig({
   server: {
     host: true,
     open: false,
-    port: parseInt(process.env.FRONTEND_PORT) || 3000
+    port: parseInt(process.env.FRONTEND_PORT) || 3000,
+    proxy: {
+      '/api': {
+        target: process.env.API_TARGET || 'http://backend:5000',
+        changeOrigin: true,
+        secure: false
+      }
+    }
   }
 })

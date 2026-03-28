@@ -86,7 +86,7 @@ Once the setup is complete, you can access the system at the following URLs:
 The database is pre-seeded with a comprehensive dummy hospital setup ("Cedars-Sinai Medical Center") with the following test accounts:
 
 All accounts share the default password:
-**Password:** `password123`
+**Password:** `password@123`
 
 | Role | Name | Email | Additional Info |
 | --- | --- | --- | --- |
