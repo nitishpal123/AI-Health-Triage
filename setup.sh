@@ -33,8 +33,8 @@ docker exec -it triage-backend node src/seed.js
 
 echo "==========================================="
 echo "✅ Setup Complete!"
-echo "• Frontend Dashboard is running at: http://localhost:5173"
-echo "• AI / Backend API is running at:   http://localhost:3001"
+echo "• Frontend Dashboard is running at: http://localhost:3000"
+echo "• AI / Backend API is running at:   http://localhost:5000"
 echo "• MongoDB database mounted at:      localhost:27017"
 echo ""
 echo "Reminder: Assign GEMINI_API_KEY inside the .env file to activate the AI Medical Analyzer NLP."

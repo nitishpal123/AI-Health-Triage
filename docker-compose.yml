@@ -16,10 +16,10 @@ services:
       dockerfile: Dockerfile
     container_name: triage-backend
     ports:
-      - "3001:3001"
+      - "${PORT:-5000}:${PORT:-5000}"
     environment:
       - MONGODB_URI=mongodb://mongodb:27017/ai-health-triage
-      - PORT=3001
+      - PORT=${PORT:-5000}
       - JWT_SECRET=DOCKER_LOCAL_JWT_SECRET_TESTING_KEY
       - JWT_REFRESH_SECRET=DOCKER_LOCAL_JWT_REFRESH_TESTING_KEY
       # Pull AI variables safely from local machine environment
@@ -38,11 +38,11 @@ services:
       dockerfile: Dockerfile
     container_name: triage-frontend
     ports:
-      - "5173:5173"
-      - "5174:5174"
+      - "${FRONTEND_PORT:-3000}:${FRONTEND_PORT:-3000}"
     environment:
       # Note: Localhost correctly points to the external port on the user's host machine
-      - VITE_API_URL=http://localhost:3001/api 
+      - VITE_API_URL=http://localhost:${PORT:-5000}/api
+      - FRONTEND_PORT=${FRONTEND_PORT:-3000}
     depends_on:
       - backend
     volumes:

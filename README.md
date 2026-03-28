@@ -13,8 +13,8 @@ AI-Health-Triage is a production-ready, multi-tenant AI Health Triage platform. 
 ## Architecture
 
 The application is containerized using Docker and is composed of three main services:
-- **Frontend (Triage Dashboard):** React + Vite application running on `http://localhost:5173`
-- **Backend (AI / API):** Node.js + Express application running on `http://localhost:3001`
+- **Frontend (Triage Dashboard):** React + Vite application running on `http://localhost:3000`
+- **Backend (AI / API):** Node.js + Express application running on `http://localhost:5000`
 - **Database:** MongoDB running on `localhost:27017`
 
 ## Prerequisites
@@ -73,8 +73,8 @@ docker-compose up -d
 
 Once the setup is complete, you can access the system at the following URLs:
 
-- **Frontend Application:** `http://localhost:5173`
-- **Backend API Base:** `http://localhost:3001/api`
+- **Frontend Application:** `http://localhost:3000`
+- **Backend API Base:** `http://localhost:5000/api`
 
 ### Features
 1. **Multi-Tenant System:** Role-based dashboards for Hospital Admins, Doctors, Pathologists, and Patients.

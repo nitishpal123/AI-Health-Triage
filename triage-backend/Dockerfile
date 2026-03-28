@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM node:20-alpine
 
 # Create app directory
 WORKDIR /usr/src/app
@@ -16,4 +16,4 @@ COPY . .
 EXPOSE 3001
 
 # Command to run the application
-CMD [ "npm", "start" ]
+CMD [ "npm", "run", "dev" ]
