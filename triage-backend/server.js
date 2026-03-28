@@ -77,6 +77,54 @@ app.patch('/api/patients/:id/status', (req, res) => {
     }
 });
 
+app.get('/api/reports/history', (req, res) => {
+    try {
+        if (patients.length === 0) {
+            return res.status(404).json({ error: "No history found" });
+        }
+        
+        let csvRows = [];
+        const headers = ['ID', 'Name', 'Age', 'Symptoms', 'History', 'Heart Rate', 'Blood Pressure', 'Oxygen Level', 'Triage Level', 'Score', 'Status', 'Timestamp'];
+        csvRows.push(headers.join(','));
+        
+        patients.forEach(p => {
+            const hr = p.vitals?.heartRate || '';
+            const bp = p.vitals?.bloodPressure || '';
+            const o2 = p.vitals?.oxygenLevel || '';
+            
+            const escapeCSV = (str) => {
+                if (str === null || str === undefined) return '';
+                const stringified = String(str).replace(/"/g, '""');
+                return `"${stringified}"`;
+            };
+            
+            csvRows.push([
+                p.id,
+                escapeCSV(p.name),
+                p.age,
+                escapeCSV(p.symptoms),
+                escapeCSV(p.history),
+                escapeCSV(hr),
+                escapeCSV(bp),
+                escapeCSV(o2),
+                escapeCSV(p.triageLevel),
+                p.score,
+                escapeCSV(p.status),
+                escapeCSV(p.timestamp)
+            ].join(','));
+        });
+        
+        const csvString = csvRows.join('\n');
+        
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename=triage_history_report.csv');
+        res.status(200).send(csvString);
+    } catch (err) {
+        console.error("Error generating CSV:", err);
+        res.status(500).json({ error: "Failed to generate report" });
+    }
+});
+
 const PORT = 3001;
 app.listen(PORT, () => {
     console.log(`AI Triage Backend running on port ${PORT}`);

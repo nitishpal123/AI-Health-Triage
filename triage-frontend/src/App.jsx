@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import IntakeForm from './components/IntakeForm';
 import PatientList from './components/PatientList';
-import { Activity } from 'lucide-react';
+import { Activity, Download } from 'lucide-react';
 
 function App() {
-  const [patients, setPatients] = useState([]);
+  const [allPatients, setAllPatients] = useState([]);
+  const [activeTab, setActiveTab] = useState('waiting');
   const [loading, setLoading] = useState(true);
 
   const fetchPatients = async () => {
     try {
       const res = await fetch('http://localhost:3001/api/patients');
       const data = await res.json();
-      setPatients(data);
+      setAllPatients(data);
     } catch (err) {
       console.error("Failed to fetch patients", err);
     } finally {
@@ -43,14 +44,18 @@ function App() {
     }
   };
 
-  const waitingPatients = patients.filter(p => p.status === 'waiting');
-  const dischargedPatients = patients.filter(p => p.status === 'treated');
+  const patients = allPatients.filter(p => p.status === 'waiting');
+  const historyPatients = allPatients.filter(p => p.status !== 'waiting');
 
   const stats = {
-    critical: waitingPatients.filter(p => p.triageLevel === 'Critical').length,
-    urgent: waitingPatients.filter(p => p.triageLevel === 'Urgent').length,
-    standard: waitingPatients.filter(p => p.triageLevel === 'Standard').length,
-    total: waitingPatients.length
+    critical: patients.filter(p => p.triageLevel === 'Critical').length,
+    urgent: patients.filter(p => p.triageLevel === 'Urgent').length,
+    standard: patients.filter(p => p.triageLevel === 'Standard').length,
+    total: patients.length
+  };
+
+  const downloadReport = () => {
+    window.open('http://localhost:3001/api/reports/history', '_blank');
   };
 
   return (
@@ -61,7 +66,21 @@ function App() {
           AI Health Triage
         </h1>
         <div style={{display:'flex', alignItems:'center', gap: '1rem', color: 'var(--text-secondary)'}}>
-          Live System • {new Date().toLocaleDateString()}
+          <button 
+            onClick={downloadReport}
+            style={{ 
+              display: 'flex', alignItems: 'center', gap: '0.5rem', 
+              padding: '0.4rem 0.8rem', fontSize: '0.9rem', 
+              backgroundColor: 'var(--background-card)', 
+              color: 'var(--text-primary)', 
+              border: '1px solid var(--border-color)', 
+              borderRadius: '6px', 
+              cursor: 'pointer' 
+            }}
+          >
+            <Download size={16} /> Export History
+          </button>
+          <span>Live System • {new Date().toLocaleDateString()}</span>
         </div>
       </header>
 
@@ -88,17 +107,33 @@ function App() {
         <IntakeForm onPatientAdded={handlePatientAdded} />
       </div>
 
-      <div style={{display: 'flex', flexDirection: 'column', overflow: 'hidden', gap: '1.5rem'}}>
-        {loading ? (
-          <div className="glass-panel" style={{display:'flex', justifyContent:'center', alignItems:'center', minHeight:'200px'}}>
-            Loading AI Triage System...
-          </div>
-        ) : (
-          <>
-            <PatientList patients={waitingPatients} onStatusUpdate={handleStatusUpdate} />
-            <PatientList patients={dischargedPatients} isHistory={true} />
-          </>
-        )}
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+        <div style={{display: 'flex', gap: '1rem', marginTop: '1rem', marginBottom: '0.5rem'}}>
+          <button 
+            className={`btn ${activeTab === 'waiting' ? 'btn-primary' : 'btn-secondary'}`} 
+            onClick={() => setActiveTab('waiting')}
+            style={{ flex: 1, padding: '0.75rem', fontSize: '1rem', borderRadius: '8px', border: '1px solid var(--border-color)', cursor: 'pointer', backgroundColor: activeTab === 'waiting' ? 'var(--accent-blue)' : 'var(--background-card)', color: activeTab === 'waiting' ? '#fff' : 'var(--text-primary)' }}
+          >
+            Active Queue ({patients.length})
+          </button>
+          <button 
+            className={`btn ${activeTab === 'history' ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => setActiveTab('history')}
+            style={{ flex: 1, padding: '0.75rem', fontSize: '1rem', borderRadius: '8px', border: '1px solid var(--border-color)', cursor: 'pointer', backgroundColor: activeTab === 'history' ? 'var(--accent-blue)' : 'var(--background-card)', color: activeTab === 'history' ? '#fff' : 'var(--text-primary)' }}
+          >
+            Patient History ({historyPatients.length})
+          </button>
+        </div>
+
+        <div style={{display: 'flex', flexDirection: 'column', overflow: 'hidden', flex: 1}}>
+          {loading ? (
+            <div className="glass-panel" style={{display:'flex', justifyContent:'center', alignItems:'center', height:'100%'}}>
+              Loading AI Triage System...
+            </div>
+          ) : (
+            <PatientList patients={activeTab === 'waiting' ? patients : historyPatients} onStatusUpdate={handleStatusUpdate} isHistory={activeTab === 'history'} />
+          )}
+        </div>
       </div>
     </div>
   );
