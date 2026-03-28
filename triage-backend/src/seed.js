@@ -40,7 +40,7 @@ const seedDB = async () => {
         });
 
         const salt = await bcrypt.genSalt(10);
-        const password = await bcrypt.hash('password123', salt);
+        const password = await bcrypt.hash('password@123', salt);
 
         console.log('Creating System Roles (Users)...');
         
@@ -53,20 +53,101 @@ const seedDB = async () => {
             tenantId: tenant._id, departmentId: cardioDept._id 
         });
 
-        // Add requested generic doctor account
-        await User.create({ 
-            name: "Generic Doctor", email: "doctor@hospital.com", password: password, role: "Doctor", 
-            tenantId: tenant._id, departmentId: cardioDept._id 
-        });
-
         const drPatel = await User.create({ 
             name: "Dr. Ananya Patel", email: "dr.patel@hospital.com", password: password, role: "Doctor", 
             tenantId: tenant._id, departmentId: neuroDept._id 
         });
 
-        // Pathologist & Pathology Lab
+        // Pathologist & Pathology Labs (multiple with rich data)
         const labTech = await User.create({ name: "Sarah LabTech", email: "lab@hospital.com", password: password, role: "Pathologist", tenantId: tenant._id });
-        await PathologyLab.create({ tenantId: tenant._id, name: "Core Diagnostics Lab", contactEmail: "lab@hospital.com" });
+
+        const COMMON_SERVICES = [
+            { name: 'Complete Blood Count (CBC)', price: 18, homePrice: 28, turnaround: '4-6 hrs' },
+            { name: 'Lipid Panel', price: 35, homePrice: 50, turnaround: '6-8 hrs' },
+            { name: 'Blood Glucose (Fasting)', price: 12, homePrice: 20, turnaround: '2-4 hrs' },
+            { name: 'HbA1c', price: 28, homePrice: 40, turnaround: '6-8 hrs' },
+            { name: 'Liver Function Test (LFT)', price: 40, homePrice: 58, turnaround: '6-8 hrs' },
+            { name: 'Kidney Function Test (KFT)', price: 38, homePrice: 55, turnaround: '6-8 hrs' },
+            { name: 'Thyroid Profile (TSH, T3, T4)', price: 45, homePrice: 65, turnaround: '8-12 hrs' },
+            { name: 'Urinalysis', price: 15, homePrice: 25, turnaround: '2-4 hrs' },
+            { name: 'ECG', price: 30, homePrice: 50, turnaround: '1-2 hrs' },
+            { name: 'Troponin I', price: 55, homePrice: 75, turnaround: '2-4 hrs' },
+            { name: 'D-Dimer', price: 60, homePrice: 80, turnaround: '4-6 hrs' },
+            { name: 'CRP (C-Reactive Protein)', price: 25, homePrice: 38, turnaround: '4-6 hrs' },
+            { name: 'Chest X-Ray', price: 45, homePrice: null, turnaround: '2-4 hrs' },
+            { name: 'CT Scan (Head)', price: 280, homePrice: null, turnaround: '24-48 hrs' },
+            { name: 'MRI Brain', price: 450, homePrice: null, turnaround: '24-48 hrs' },
+            { name: 'X-Ray (Limb)', price: 35, homePrice: null, turnaround: '2-4 hrs' },
+            { name: 'Electrolytes Panel', price: 30, homePrice: 45, turnaround: '4-6 hrs' },
+            { name: 'ABG (Arterial Blood Gas)', price: 65, homePrice: null, turnaround: '1-2 hrs' },
+            { name: 'Blood Type & Cross Match', price: 40, homePrice: 55, turnaround: '4-6 hrs' },
+            { name: 'Spirometry', price: 80, homePrice: null, turnaround: '1-2 hrs' },
+        ];
+
+        const lab = await PathologyLab.create({
+            tenantId: tenant._id,
+            name: "Core Diagnostics Lab",
+            contactEmail: "lab@hospital.com",
+            phone: "+1 (310) 555-0101",
+            address: "8700 Beverly Blvd, Los Angeles, CA 90048",
+            city: "Los Angeles",
+            rating: 4.8,
+            reviewCount: 1240,
+            homeCollection: true,
+            walkIn: true,
+            openHours: "6:00 AM – 10:00 PM",
+            accreditations: ["CAP Accredited", "CLIA Certified", "ISO 15189"],
+            services: COMMON_SERVICES
+        });
+
+        await PathologyLab.create({
+            tenantId: tenant._id,
+            name: "MedPlus Diagnostics",
+            contactEmail: "info@medplus.com",
+            phone: "+1 (310) 555-0202",
+            address: "1250 Sunset Blvd, Los Angeles, CA 90026",
+            city: "Los Angeles",
+            rating: 4.5,
+            reviewCount: 876,
+            homeCollection: true,
+            walkIn: true,
+            openHours: "7:00 AM – 9:00 PM",
+            accreditations: ["CLIA Certified", "CAP Accredited"],
+            services: COMMON_SERVICES.map(s => ({ ...s, price: Math.round(s.price * 0.88), homePrice: s.homePrice ? Math.round(s.homePrice * 0.88) : null }))
+        });
+
+        await PathologyLab.create({
+            tenantId: tenant._id,
+            name: "QuickTest Express",
+            contactEmail: "hello@quicktest.com",
+            phone: "+1 (310) 555-0303",
+            address: "3400 Wilshire Blvd, Los Angeles, CA 90010",
+            city: "Los Angeles",
+            rating: 4.2,
+            reviewCount: 432,
+            homeCollection: false,
+            walkIn: true,
+            openHours: "8:00 AM – 6:00 PM",
+            accreditations: ["CLIA Certified"],
+            services: COMMON_SERVICES.filter(s => !['MRI Brain','CT Scan (Head)','Spirometry','ABG (Arterial Blood Gas)'].includes(s.name))
+                .map(s => ({ ...s, price: Math.round(s.price * 0.75), homePrice: null }))
+        });
+
+        await PathologyLab.create({
+            tenantId: tenant._id,
+            name: "HealthFirst Labs",
+            contactEmail: "contact@healthfirst.com",
+            phone: "+1 (310) 555-0404",
+            address: "6200 Sepulveda Blvd, Van Nuys, CA 91411",
+            city: "Van Nuys",
+            rating: 4.6,
+            reviewCount: 654,
+            homeCollection: true,
+            walkIn: true,
+            openHours: "7:00 AM – 8:00 PM",
+            accreditations: ["CAP Accredited", "CLIA Certified"],
+            services: COMMON_SERVICES.map(s => ({ ...s, price: Math.round(s.price * 0.95), homePrice: s.homePrice ? Math.round(s.homePrice * 0.92) : null }))
+        });
 
         // Patient User Account (To Login)
         await User.create({ name: "John Doe (Patient Login)", email: "patient@hospital.com", password: password, role: "Patient", tenantId: tenant._id });
@@ -77,6 +158,10 @@ const seedDB = async () => {
                 tenantId: tenant._id,
                 departmentId: cardioDept._id,
                 doctorId: drSmith._id,
+                assignedDoctorId: drSmith._id,
+                labId: lab._id,
+                assignedLabName: "Core Diagnostics Lab",
+                labTests: ['ECG', 'Troponin', 'CBC', 'Lipid Panel'],
                 id: uuidv4(),
                 name: "Robert Johnson",
                 age: 58,
@@ -87,12 +172,26 @@ const seedDB = async () => {
                 score: 95,
                 estimatedWaitTime: "0",
                 status: "waiting",
-                triageReasoning: "Critical symptom detected: chest pain | Critical hypoxia (SpO2: 88%) | Critical BP (180/110)"
+                testStatus: "Processing",
+                triageReasoning: "Critical symptom detected: chest pain | Critical hypoxia (SpO2: 88%) | Critical BP (180/110)",
+                journey: [
+                    { step: 'Patient Onboarded', status: 'completed', completedAt: new Date() },
+                    { step: 'Doctor Assigned', status: 'completed', completedAt: new Date() },
+                    { step: 'Lab Tests Ordered', status: 'completed', completedAt: new Date() },
+                    { step: 'Lab Processing', status: 'active' },
+                    { step: 'Results Released', status: 'pending' },
+                    { step: 'Doctor Consultation', status: 'pending' },
+                    { step: 'Discharged', status: 'pending' }
+                ]
             },
             {
                 tenantId: tenant._id,
                 departmentId: neuroDept._id,
                 doctorId: drPatel._id,
+                assignedDoctorId: drPatel._id,
+                labId: lab._id,
+                assignedLabName: "Core Diagnostics Lab",
+                labTests: ['CT Scan', 'MRI Brain', 'CBC'],
                 id: uuidv4(),
                 name: "Emily Chen",
                 age: 34,
@@ -103,7 +202,17 @@ const seedDB = async () => {
                 score: 65,
                 estimatedWaitTime: "15",
                 status: "waiting",
-                triageReasoning: "Urgent symptom detected: severe pain | Urgent symptom detected: dizzy"
+                testStatus: "Pending",
+                triageReasoning: "Urgent symptom detected: severe pain | Urgent symptom detected: dizzy",
+                journey: [
+                    { step: 'Patient Onboarded', status: 'completed', completedAt: new Date() },
+                    { step: 'Doctor Assigned', status: 'completed', completedAt: new Date() },
+                    { step: 'Lab Tests Ordered', status: 'completed', completedAt: new Date() },
+                    { step: 'Lab Processing', status: 'active' },
+                    { step: 'Results Released', status: 'pending' },
+                    { step: 'Doctor Consultation', status: 'pending' },
+                    { step: 'Discharged', status: 'pending' }
+                ]
             },
             {
                 tenantId: tenant._id,
@@ -117,12 +226,23 @@ const seedDB = async () => {
                 score: 25,
                 estimatedWaitTime: "60",
                 status: "waiting",
-                triageReasoning: "Urgent symptom detected: fever"
+                testStatus: "None",
+                triageReasoning: "Urgent symptom detected: fever",
+                journey: [
+                    { step: 'Patient Onboarded', status: 'completed', completedAt: new Date() },
+                    { step: 'Doctor Assigned', status: 'completed', completedAt: new Date() },
+                    { step: 'Doctor Consultation', status: 'active' },
+                    { step: 'Discharged', status: 'pending' }
+                ]
             },
             {
                 tenantId: tenant._id,
                 departmentId: cardioDept._id,
                 doctorId: drSmith._id,
+                assignedDoctorId: drSmith._id,
+                labId: lab._id,
+                assignedLabName: "Core Diagnostics Lab",
+                labTests: ['ECG', 'CBC', 'Lipid Panel'],
                 id: uuidv4(),
                 name: "Amanda Davis",
                 age: 65,
@@ -133,7 +253,17 @@ const seedDB = async () => {
                 score: 55,
                 estimatedWaitTime: "20",
                 status: "waiting",
-                triageReasoning: "Abnormal HR (115 bpm) | Patient history risk: heart disease"
+                testStatus: "Released",
+                triageReasoning: "Abnormal HR (115 bpm) | Patient history risk: heart disease",
+                journey: [
+                    { step: 'Patient Onboarded', status: 'completed', completedAt: new Date() },
+                    { step: 'Doctor Assigned', status: 'completed', completedAt: new Date() },
+                    { step: 'Lab Tests Ordered', status: 'completed', completedAt: new Date() },
+                    { step: 'Lab Processing', status: 'completed', completedAt: new Date() },
+                    { step: 'Results Released', status: 'completed', completedAt: new Date() },
+                    { step: 'Doctor Consultation', status: 'active' },
+                    { step: 'Discharged', status: 'pending' }
+                ]
             },
             {
                 tenantId: tenant._id,
@@ -147,7 +277,14 @@ const seedDB = async () => {
                 score: 20,
                 estimatedWaitTime: "45",
                 status: "waiting",
-                triageReasoning: "No high-risk indicators detected."
+                testStatus: "None",
+                triageReasoning: "No high-risk indicators detected.",
+                journey: [
+                    { step: 'Patient Onboarded', status: 'completed', completedAt: new Date() },
+                    { step: 'Doctor Assigned', status: 'completed', completedAt: new Date() },
+                    { step: 'Doctor Consultation', status: 'active' },
+                    { step: 'Discharged', status: 'pending' }
+                ]
             }
         ];
 
